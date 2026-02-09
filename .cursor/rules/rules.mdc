@@ -1,0 +1,75 @@
+---
+alwaysApply: true
+---
+# Cloud-Based File Storage Frontend Roadmap
+
+## Project Overview
+This project is a **cloud-based file storage and sharing system**, similar to Mega or Google Drive.  
+- Users can **sign up and log in**.  
+- After login, users see a **dashboard** displaying their files and folders.  
+- Users can **upload files**, set **permissions**, and share them with others.  
+- Account management allows users to **update profile and password**.  
+- Permissions include **public links** or sharing with **specific users**.  
+- Backend integration (FastAPI) will handle **authentication, file storage, permissions, and encryption** — this roadmap is focused on the **frontend implementation**.  
+
+---
+
+## Frontend Implementation Roadmap
+
+### Context Setup
+- [ ] Create `AuthContext.tsx`
+  - Stores JWT token and current user
+  - Provides `login()`, `logout()`, `getAuthToken()`
+  - Wrap `<App />` in `AuthProvider` in `main.tsx`
+
+### Authentication Pages
+- [ ] `Login.tsx`
+  - Form: email + password
+  - Connect to `api/auth.ts` login function
+  - Store token + user in `AuthContext`
+  - Redirect to Dashboard after login
+- [ ] `Register.tsx`
+  - Form: email + password
+  - Connect to `api/auth.ts` register function
+  - Store token + user in `AuthContext`
+  - Redirect to Dashboard after registration
+
+### Route Protection
+- [ ] `PrivateRoute.tsx`
+  - Wrap pages that require login
+  - Redirect to `/login` if user not logged in
+  - Use `useAuth()` from `AuthContext`
+
+### Dashboard
+- [ ] `Dashboard.tsx`
+  - Fetch user files/folders using `useFetchFiles` hook
+  - Render `FileCard` / `FolderCard` components
+  - Handle loading / empty state
+
+### File Upload & Permissions
+- [ ] `FileUpload.tsx`
+  - File picker or drag & drop
+  - Set permissions: public / selected users
+  - POST to `/files/upload` endpoint
+  - Show success/error feedback
+  - Update Dashboard after upload
+
+### Account Settings
+- [ ] `AccountSettings.tsx`
+  - Allow email/password change
+  - Display profile info
+  - Connect to `api/users.ts`
+
+### Optional / Bonus Pages
+- [ ] `FileDetail.tsx` → single file view + sharing info
+- [ ] `Landing.tsx` → welcome page for non-logged-in users
+- [ ] `NotFound.tsx` → 404 page
+
+---
+
+## Notes / Best Practices
+- Build forms → integrate API → add state/hooks → then style with Tailwind  
+- Test each page in isolation before backend is fully ready  
+- Use `context` + `PrivateRoute` to secure routes  
+- Keep reusable components (`FileCard`, `FolderCard`, `UploadForm`) in `components/`  
+- Backend integration (FastAPI) will be implemented **after frontend is functional**
