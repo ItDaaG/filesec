@@ -24,3 +24,12 @@ SECRET_KEY = os.getenv("SECRET_KEY", "change-this-in-production")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
 
+
+# --- File encryption configuration ---
+MASTER_KEY = os.getenv("MASTER_KEY")
+if not MASTER_KEY:
+    raise ValueError(
+        "MASTER_KEY environment variable is not set. "
+        "Generate a strong random string and set MASTER_KEY in your .env file."
+    )
+

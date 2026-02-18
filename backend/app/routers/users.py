@@ -9,7 +9,7 @@ from ..models import User as UserModel
 router = APIRouter(prefix="/users", tags=["users"])
 
 
-@router.post("/", response_model=schemas.UserOut, status_code=status.HTTP_201_CREATED)
+@router.post("/signup", response_model=schemas.UserOut, status_code=status.HTTP_201_CREATED)
 def create_user(
     user_in: schemas.UserCreate,
     db: Session = Depends(get_db),

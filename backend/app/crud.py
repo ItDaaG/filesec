@@ -33,3 +33,24 @@ def delete_user(db: Session, user: models.User) -> None:
     db.commit()
 
 
+def create_file_for_user(
+    db: Session,
+    *,
+    owner_id: int,
+    filename: str,
+    file_path: str,
+    file_size: int,
+    is_public: bool = False,
+) -> models.File:
+    db_file = models.File(
+        filename=filename,
+        file_path=file_path,
+        file_size=file_size,
+        is_public=is_public,
+        owner_id=owner_id,
+    )
+    db.add(db_file)
+    db.commit()
+    db.refresh(db_file)
+    return db_file
+

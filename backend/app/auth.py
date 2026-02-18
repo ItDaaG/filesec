@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from . import models, crud
 from .database import get_db
 from .utils.security import verify_password, create_access_token, decode_access_token
-from .schemas import Token
+from .schemas import Token, UserLogin
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 
@@ -23,10 +23,10 @@ def authenticate_user(db: Session, email: str, password: str) -> models.User | N
 
 @router.post("/login", response_model=Token)
 def login_for_access_token(
-    form_data: OAuth2PasswordRequestForm = Depends(),
+    loginData: UserLogin,
     db: Session = Depends(get_db),
 ):
-    user = authenticate_user(db, email=form_data.username, password=form_data.password)
+    user = authenticate_user(db, email=loginData.email, password=loginData.password)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
