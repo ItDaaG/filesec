@@ -1,11 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 
-from . import models, crud
+from . import models, crud, schemas
 from .database import get_db
 from .utils.security import verify_password, create_access_token, decode_access_token
-from .schemas import Token, UserLogin
+from .schemas import AuthResponse
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 
@@ -21,12 +21,12 @@ def authenticate_user(db: Session, email: str, password: str) -> models.User | N
     return user
 
 
-@router.post("/login", response_model=Token)
+@router.post("/login", response_model=AuthResponse)
 def login_for_access_token(
-    loginData: UserLogin,
+    credentials: schemas.UserLogin,
     db: Session = Depends(get_db),
 ):
-    user = authenticate_user(db, email=loginData.email, password=loginData.password)
+    user = authenticate_user(db, email=credentials.email, password=credentials.password)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -34,7 +34,7 @@ def login_for_access_token(
             headers={"WWW-Authenticate": "Bearer"},
         )
     access_token = create_access_token(data={"sub": str(user.id)})
-    return {"access_token": access_token, "token_type": "bearer"}
+    return {"access_token": access_token, "token_type": "bearer", "user": user}
 
 
 async def get_current_user(

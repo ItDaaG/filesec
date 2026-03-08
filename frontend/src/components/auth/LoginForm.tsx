@@ -4,22 +4,21 @@ import { SubmitButton } from "../ui/SubmitButton";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { signUp } from "@/api/authService";
+import { performLogin } from "@/api/authService";
 
-export const SignUpForm = () => {
+export const LoginForm = () => {
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (formData: FormData) => {
     setError(null);
 
     const payload = {
-      username: String(formData.get("username") ?? ""),
       email: String(formData.get("email") ?? ""),
       password: String(formData.get("password") ?? ""),
     };
 
     try {
-      await signUp(payload);
+      await performLogin(payload);
     } catch (err) {
       if (axios.isAxiosError(err) && err.response?.data?.detail) {
         setError(err.response.data.detail);
@@ -32,8 +31,8 @@ export const SignUpForm = () => {
   return (
     <Card className="w-[400px]">
       <CardHeader>
-        <CardTitle>Create an account</CardTitle>
-        <CardDescription>Enter your details below to get started.</CardDescription>
+        <CardTitle>Sign in</CardTitle>
+        <CardDescription>Enter your credentials to access your account.</CardDescription>
       </CardHeader>
       
       <form action={handleSubmit}>
@@ -41,15 +40,6 @@ export const SignUpForm = () => {
           {error && (
             <p className="text-sm text-red-500 text-center">{error}</p>
           )}
-          <div className="space-y-2">
-            <Label htmlFor="username">Username</Label>
-            <Input 
-              id="username"
-              name="username"
-              placeholder="johndoe" 
-              required 
-            />
-          </div>
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input 
@@ -66,14 +56,13 @@ export const SignUpForm = () => {
               id="password"  
               name="password"
               type="password"
-              minLength={8}
               required 
             />
           </div>
         </CardContent>
         
         <CardFooter className="mt-4">
-          <SubmitButton label="Sign Up" pendingText="Creating Account"></SubmitButton>
+          <SubmitButton label="Sign In" pendingText="Signing in..."></SubmitButton>
         </CardFooter>
       </form>
     </Card>

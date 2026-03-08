@@ -3,9 +3,10 @@ from datetime import datetime
 from typing import Optional, List
 
 # --- AUTH SCHEMAS ---
-class Token(BaseModel):
+class AuthResponse(BaseModel):
     access_token: str
     token_type: str
+    user: "UserOut"
 
 # --- USER SCHEMAS ---
 class UserBase(BaseModel):

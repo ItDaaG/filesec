@@ -8,13 +8,17 @@ from .routers.files import router as files_router
 
 app = FastAPI()
 
+# CORS middleware - allow all origins
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+
+# Test database connection on startup
 test_db_connection()
 
 # Create all tables

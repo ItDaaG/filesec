@@ -7,9 +7,6 @@ const AUTH_TOKEN_KEY = 'auth_token'
 export const api = axios.create({
   baseURL: API_BASE_URL,
   withCredentials: false,
-  headers: {
-    'Content-Type': 'application/json',
-  }
 })
 
 api.interceptors.request.use((config: InternalAxiosRequestConfig): InternalAxiosRequestConfig => {
