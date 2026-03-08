@@ -40,6 +40,7 @@ out/
 Thumbs.db
 
 # Uploads and test files
+backend/uploads/
 *.MP4
 *.mp4
 *.avi
