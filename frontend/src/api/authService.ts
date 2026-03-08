@@ -35,3 +35,15 @@ export const getMe = async (): Promise<User> => {
   const { data } = await api.get<User>('/users/me');
   return data;
 };
+
+export interface StorageStats {
+  storage_used_bytes: number;
+  storage_limit_bytes: number;
+  storage_used_percentage: number;
+  account_tier: string;
+}
+
+export const getStorageStats = async (): Promise<StorageStats> => {
+  const { data } = await api.get<StorageStats>('/users/me/storage-stats');
+  return data;
+};

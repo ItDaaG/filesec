@@ -22,8 +22,15 @@ class UserLogin(BaseModel):
 
 class UserOut(UserBase):
     id: int
+    account_tier: str
     created_at: datetime
     model_config = ConfigDict(from_attributes=True)
+
+class StorageStats(BaseModel):
+    storage_used_bytes: int
+    storage_limit_bytes: int
+    storage_used_percentage: float
+    account_tier: str
 
 # --- FILE SCHEMAS ---
 class FileBase(BaseModel):
