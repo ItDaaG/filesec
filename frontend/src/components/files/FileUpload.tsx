@@ -3,6 +3,7 @@ import { uploadFile } from "@/api/fileService";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { X } from "lucide-react";
 
 interface FileUploadProps {
   onUploadSuccess?: (file: { id: number; filename: string; file_size: number }) => void;
@@ -120,16 +121,18 @@ export const FileUpload = ({
         <CardDescription>Select a file to upload to your storage</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Drag and drop area */}
         <div
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
-          onClick={() => fileInputRef.current?.click()}
+          onClick={() => !file && !uploading && fileInputRef.current?.click()}
           className={`
-            border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors
+            relative border-2 border-dashed rounded-lg
+            h-[120px] flex items-center justify-center
+            transition-colors duration-150
+            ${file ? "cursor-default" : "cursor-pointer"}
             ${isDragging ? "border-primary bg-primary/5" : "border-muted-foreground/25 hover:border-primary/50"}
-            ${uploading ? "opacity-50 cursor-not-allowed" : ""}
+            ${uploading ? "opacity-50 pointer-events-none" : ""}
           `}
         >
           <input
@@ -139,15 +142,30 @@ export const FileUpload = ({
             className="hidden"
             disabled={uploading}
           />
+
+          {file && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setFile(null);
+                if (fileInputRef.current) fileInputRef.current.value = "";
+              }}
+              className="absolute top-2 right-2 rounded-full p-1 text-red-500 hover:bg-red-50 dark:hover:bg-red-950 transition-colors"
+              aria-label="Remove file"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+
           {file ? (
-            <div className="space-y-2">
-              <p className="font-medium">{file.name}</p>
+            <div className="text-center space-y-1 px-8">
+              <p className="font-medium truncate">{file.name}</p>
               <p className="text-sm text-muted-foreground">{formatFileSize(file.size)}</p>
-              <p className="text-xs text-muted-foreground">Click to change file</p>
             </div>
           ) : (
-            <div className="space-y-2">
-              <p className="text-muted-foreground">Drag and drop a file here, or click to select</p>
+            <div className="text-center space-y-1 px-8">
+              <p className="text-muted-foreground text-sm">Drag and drop a file here, or click to select</p>
               <p className="text-xs text-muted-foreground">Click to browse files</p>
             </div>
           )}

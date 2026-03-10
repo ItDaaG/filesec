@@ -26,12 +26,11 @@ class File(Base):
     file_size = Column(Integer) # In bytes
     is_public = Column(Boolean, default=False)  # "Openly" shared
     owner_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"))
-
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     # Relationships
     owner = relationship("User", back_populates="owned_files")
-    shared_users = relationship("FilePermission", back_populates="file")
+    shared_with = relationship("FilePermission", back_populates="file")
 
 class FilePermission(Base):
     """
@@ -43,5 +42,5 @@ class FilePermission(Base):
     file_id = Column(Integer, ForeignKey("files.id", ondelete="CASCADE"))
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"))
 
-    file = relationship("File", back_populates="shared_users")
+    file = relationship("File", back_populates="shared_with")
     user = relationship("User", back_populates="shared_with_me")

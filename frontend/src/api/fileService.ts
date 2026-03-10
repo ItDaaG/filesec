@@ -19,3 +19,12 @@ export const getMyFiles = async (): Promise<FileType[]> => {
   const { data } = await api.get<FileType[]>('/files/');
   return data;
 };
+
+export const deleteFile = async (fileId: number): Promise<void> => {
+  await api.delete(`/files/${fileId}`);
+};
+
+export const getSharedWithMeFiles = async (): Promise<FileType[]> => {
+  const { data } = await api.get<FileType[]>('/files/shared-with-me');
+  return data;
+};

@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 
 from sqlalchemy.orm import Session
 
@@ -6,6 +6,8 @@ from . import models
 from .schemas import UserCreate
 from .utils.security import get_password_hash
 
+
+# --- USER HELPERS ---
 
 def get_user_by_email(db: Session, email: str) -> Optional[models.User]:
     return db.query(models.User).filter(models.User.email == email).first()
@@ -37,6 +39,8 @@ def delete_user(db: Session, user: models.User) -> None:
     db.commit()
 
 
+# --- FILE HELPERS ---
+
 def create_file_for_user(
     db: Session,
     *,
@@ -58,3 +62,40 @@ def create_file_for_user(
     db.refresh(db_file)
     return db_file
 
+
+# --- FILE PERMISSION HELPERS ---
+
+def share_file_with_users(db: Session, file: models.File, emails: List[str]) -> None:
+    """
+    Grant access to a file for each email in the list.
+    - Skips emails that don't match any user.
+    - Skips the file owner (they already have access).
+    - Idempotent: won't create duplicate FilePermission rows.
+    """
+    for email in emails:
+        target = get_user_by_email(db, email)
+        if target is None or target.id == file.owner_id:
+            continue
+        exists = db.query(models.FilePermission).filter(
+            models.FilePermission.file_id == file.id,
+            models.FilePermission.user_id == target.id,
+        ).first()
+        if not exists:
+            db.add(models.FilePermission(file_id=file.id, user_id=target.id))
+    db.commit()
+
+
+def revoke_file_share(db: Session, file: models.File, user_id: int) -> bool:
+    """
+    Revoke a specific user's access to a file.
+    Returns True if a permission was removed, False if it didn't exist.
+    """
+    permission = db.query(models.FilePermission).filter(
+        models.FilePermission.file_id == file.id,
+        models.FilePermission.user_id == user_id,
+    ).first()
+    if not permission:
+        return False
+    db.delete(permission)
+    db.commit()
+    return True
