@@ -5,6 +5,7 @@ from .database import engine, Base, test_db_connection
 from .auth import router as auth_router
 from .routers.users import router as users_router
 from .routers.files import router as files_router
+from .routers.folders import router as folders_router
 
 app = FastAPI()
 
@@ -33,4 +34,5 @@ def read_root():
 app.include_router(auth_router)
 app.include_router(users_router)
 app.include_router(files_router)
+app.include_router(folders_router)
 

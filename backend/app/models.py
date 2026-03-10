@@ -1,7 +1,8 @@
-from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, DateTime
+from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, DateTime, UniqueConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from .database import Base
+
 
 class User(Base):
     __tablename__ = "users"
@@ -15,7 +16,26 @@ class User(Base):
 
     # Relationships
     owned_files = relationship("File", back_populates="owner")
+    owned_folders = relationship("Folder", back_populates="owner")
     shared_with_me = relationship("FilePermission", back_populates="user")
+
+
+class Folder(Base):
+    __tablename__ = "folders"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(255), nullable=False)
+    owner_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    parent_id = Column(Integer, ForeignKey("folders.id", ondelete="CASCADE"), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    # Relationships
+    owner = relationship("User", back_populates="owned_folders")
+    parent = relationship("Folder", back_populates="children", remote_side=[id])
+    children = relationship("Folder", back_populates="parent", cascade="all, delete-orphan")
+    files = relationship("File", back_populates="folder", cascade="all, delete-orphan")
+
 
 class File(Base):
     __tablename__ = "files"
@@ -23,20 +43,22 @@ class File(Base):
     id = Column(Integer, primary_key=True, index=True)
     filename = Column(String(255), nullable=False)
     file_path = Column(String(500), nullable=False)  # Path to actual storage
-    file_size = Column(Integer) # In bytes
+    file_size = Column(Integer)  # In bytes
     is_public = Column(Boolean, default=False)  # "Openly" shared
     owner_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"))
+    folder_id = Column(Integer, ForeignKey("folders.id", ondelete="SET NULL"), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     # Relationships
     owner = relationship("User", back_populates="owned_files")
-    shared_with = relationship("FilePermission", back_populates="file")
+    folder = relationship("Folder", back_populates="files")
+    shared_with = relationship("FilePermission", back_populates="file", cascade="all, delete-orphan")
+
 
 class FilePermission(Base):
-    """
-    Handles sharing files with specific users
-    """
+    """Handles sharing files with specific users"""
     __tablename__ = "file_permissions"
+    __table_args__ = (UniqueConstraint("file_id", "user_id", name="uq_file_user"),)
 
     id = Column(Integer, primary_key=True, index=True)
     file_id = Column(Integer, ForeignKey("files.id", ondelete="CASCADE"))

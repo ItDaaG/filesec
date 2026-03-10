@@ -49,6 +49,7 @@ def create_file_for_user(
     file_path: str,
     file_size: int,
     is_public: bool = False,
+    folder_id: Optional[int] = None,
 ) -> models.File:
     db_file = models.File(
         filename=filename,
@@ -56,6 +57,7 @@ def create_file_for_user(
         file_size=file_size,
         is_public=is_public,
         owner_id=owner_id,
+        folder_id=folder_id,
     )
     db.add(db_file)
     db.commit()
@@ -99,3 +101,71 @@ def revoke_file_share(db: Session, file: models.File, user_id: int) -> bool:
     db.delete(permission)
     db.commit()
     return True
+
+
+# --- FOLDER HELPERS ---
+
+def create_folder(
+    db: Session,
+    *,
+    owner_id: int,
+    name: str,
+    parent_id: Optional[int] = None,
+) -> models.Folder:
+    db_folder = models.Folder(
+        name=name,
+        owner_id=owner_id,
+        parent_id=parent_id,
+    )
+    db.add(db_folder)
+    db.commit()
+    db.refresh(db_folder)
+    return db_folder
+
+
+def get_folder_by_id(db: Session, folder_id: int) -> Optional[models.Folder]:
+    return db.query(models.Folder).filter(models.Folder.id == folder_id).first()
+
+
+def list_folders_for_user(
+    db: Session,
+    owner_id: int,
+    parent_id: Optional[int] = None,
+) -> List[models.Folder]:
+    """
+    List folders owned by a user.
+    - parent_id=None  → top-level folders (no parent).
+    - parent_id=<int> → children of that folder.
+    """
+    query = db.query(models.Folder).filter(models.Folder.owner_id == owner_id)
+    if parent_id is None:
+        query = query.filter(models.Folder.parent_id.is_(None))
+    else:
+        query = query.filter(models.Folder.parent_id == parent_id)
+    return query.all()
+
+
+def rename_folder(db: Session, folder: models.Folder, new_name: str) -> models.Folder:
+    folder.name = new_name
+    db.commit()
+    db.refresh(folder)
+    return folder
+
+
+def delete_folder(db: Session, folder: models.Folder) -> None:
+    """
+    Recursively deletes a folder and all its children/files.
+    SQLAlchemy cascade="all, delete-orphan" handles the child rows.
+    """
+    db.delete(folder)
+    db.commit()
+
+
+def move_file_to_folder(
+    db: Session, file: models.File, folder_id: Optional[int] = None
+) -> models.File:
+    """Move a file into a folder (or back to root if folder_id is None)."""
+    file.folder_id = folder_id
+    db.commit()
+    db.refresh(file)
+    return file

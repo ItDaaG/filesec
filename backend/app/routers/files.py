@@ -1,6 +1,6 @@
 import os
-from typing import List
-from fastapi import APIRouter, Depends, File, Form, UploadFile, HTTPException, status
+from typing import List, Optional
+from fastapi import APIRouter, Depends, File, Form, Query, UploadFile, HTTPException, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
@@ -19,12 +19,19 @@ router = APIRouter(prefix="/files", tags=["files"])
 def upload_file(
     file: UploadFile = File(...),
     is_public: bool = Form(False),
+    folder_id: Optional[int] = Form(None),
     share_with: List[str] = Form(default=[]),
     db: Session = Depends(get_db),
     current_user: UserModel = Depends(get_current_user),
 ):
     if not file.filename:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Filename is required")
+
+    # Validate folder ownership if provided
+    if folder_id is not None:
+        folder = crud.get_folder_by_id(db, folder_id)
+        if not folder or folder.owner_id != current_user.id:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Folder not found")
 
     file_path, file_size = save_file(file, current_user.id)
 
@@ -35,6 +42,7 @@ def upload_file(
         file_path=file_path,
         file_size=file_size,
         is_public=is_public,
+        folder_id=folder_id,
     )
 
     if share_with:
@@ -45,11 +53,17 @@ def upload_file(
 
 @router.get("/", response_model=list[schemas.FileOut])
 def list_my_files(
+    folder_id: Optional[int] = Query(None, description="Filter by folder. Omit for all files."),
+    root_only: bool = Query(False, description="If true, return only files not in any folder."),
     db: Session = Depends(get_db),
     current_user: UserModel = Depends(get_current_user),
 ):
-    files = db.query(crud.models.File).filter(crud.models.File.owner_id == current_user.id).all()
-    return files
+    query = db.query(models.File).filter(models.File.owner_id == current_user.id)
+    if folder_id is not None:
+        query = query.filter(models.File.folder_id == folder_id)
+    elif root_only:
+        query = query.filter(models.File.folder_id.is_(None))
+    return query.all()
 
 
 @router.get("/shared-with-me", response_model=list[schemas.FileOut])
