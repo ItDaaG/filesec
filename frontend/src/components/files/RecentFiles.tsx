@@ -14,7 +14,6 @@ export const RecentFiles = ({ maxFiles = 5, onFileClick }: RecentFilesProps) => 
   const [files, setFiles] = useState<FileType[]>([]);
   const [loading, setLoading] = useState(true);
   const [hoveredFileId, setHoveredFileId] = useState<number | null>(null);
-  // Each file row gets its own cancel ref so mouse-leave can reset confirmation
   const cancelRefsMap = useRef<Map<number, React.MutableRefObject<(() => void) | null>>>(new Map());
 
   useEffect(() => {
