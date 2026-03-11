@@ -8,33 +8,29 @@ import { X } from "lucide-react";
 interface FileUploadProps {
   onUploadSuccess?: (file: { id: number; filename: string; file_size: number }) => void;
   onUploadError?: (error: string) => void;
-  defaultIsPublic?: boolean;
   className?: string;
 }
 
 export const FileUpload = ({
   onUploadSuccess,
   onUploadError,
-  defaultIsPublic = false,
   className,
 }: FileUploadProps) => {
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  const [isPublic, setIsPublic] = useState(defaultIsPublic);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileSelect = (selectedFile: File) => {
-    setFile(selectedFile);
+  const handleFilesSelect = (selectedFiles: FileList | null) => {
+    if (!selectedFiles || selectedFiles.length === 0) return;
+    setFiles(Array.from(selectedFiles));
     setError(null);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      handleFileSelect(e.target.files[0]);
-    }
+    handleFilesSelect(e.target.files);
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -50,13 +46,25 @@ export const FileUpload = ({
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleFileSelect(e.dataTransfer.files[0]);
+    handleFilesSelect(e.dataTransfer.files);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if ((e.key === "Enter" || e.key === " ") && files.length === 0 && !uploading) {
+      e.preventDefault();
+      fileInputRef.current?.click();
+    }
+  };
+
+  const removeFile = (index: number) => {
+    setFiles((prev) => prev.filter((_, i) => i !== index));
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
     }
   };
 
   const handleUpload = async () => {
-    if (!file) {
+    if (files.length === 0) {
       setError("Please select a file");
       return;
     }
@@ -66,33 +74,39 @@ export const FileUpload = ({
     setUploadProgress(0);
 
     try {
-      // Simulate progress (since we don't have actual upload progress from the API)
-      const progressInterval = setInterval(() => {
-        setUploadProgress((prev) => {
-          if (prev >= 90) {
-            clearInterval(progressInterval);
-            return 90;
-          }
-          return prev + 10;
-        });
-      }, 200);
+      const totalFiles = files.length;
+      let completedFiles = 0;
 
-      const response = await uploadFile(file, isPublic);
-      
-      clearInterval(progressInterval);
-      setUploadProgress(100);
-      setFile(null);
-      
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
+      for (const file of files) {
+        const progressInterval = setInterval(() => {
+          setUploadProgress((prev) => {
+            const currentFileProgress = 90 / totalFiles;
+            if (prev >= (completedFiles + 0.9) * (100 / totalFiles)) {
+              clearInterval(progressInterval);
+              return (completedFiles + 0.9) * (100 / totalFiles);
+            }
+            return prev + currentFileProgress / 10;
+          });
+        }, 200);
+
+        const response = await uploadFile(file);
+
+        clearInterval(progressInterval);
+        completedFiles++;
+        setUploadProgress((completedFiles / totalFiles) * 100);
+
+        if (onUploadSuccess) {
+          onUploadSuccess({
+            id: response.id,
+            filename: response.filename,
+            file_size: response.file_size,
+          });
+        }
       }
 
-      if (onUploadSuccess) {
-        onUploadSuccess({
-          id: response.id,
-          filename: response.filename,
-          file_size: response.file_size,
-        });
+      setFiles([]);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
       }
     } catch (err: any) {
       const errorMessage = err.response?.data?.detail || err.message || "Upload failed";
@@ -114,23 +128,29 @@ export const FileUpload = ({
     return `${(bytes / Math.pow(k, i)).toFixed(2)} ${sizes[i]}`;
   };
 
+  const totalSize = files.reduce((sum, f) => sum + f.size, 0);
+
   return (
     <Card className={className}>
       <CardHeader>
-        <CardTitle>Upload File</CardTitle>
-        <CardDescription>Select a file to upload to your storage</CardDescription>
+        <CardTitle>Upload Files</CardTitle>
+        <CardDescription>Select one or more files to upload</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div
+          role="button"
+          tabIndex={files.length === 0 && !uploading ? 0 : -1}
+          aria-label="File drop zone. Press Enter or Space to select files."
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
-          onClick={() => !file && !uploading && fileInputRef.current?.click()}
+          onKeyDown={handleKeyDown}
+          onClick={() => files.length === 0 && !uploading && fileInputRef.current?.click()}
           className={`
             relative border-2 border-dashed rounded-lg
-            h-[120px] flex items-center justify-center
-            transition-colors duration-150
-            ${file ? "cursor-default" : "cursor-pointer"}
+            h-[160px] flex flex-col items-center justify-center
+            transition-colors duration-150 overflow-y-auto
+            ${files.length === 0 ? "cursor-pointer" : "cursor-default"}
             ${isDragging ? "border-primary bg-primary/5" : "border-muted-foreground/25 hover:border-primary/50"}
             ${uploading ? "opacity-50 pointer-events-none" : ""}
           `}
@@ -138,68 +158,69 @@ export const FileUpload = ({
           <input
             ref={fileInputRef}
             type="file"
+            multiple
             onChange={handleFileChange}
             className="hidden"
             disabled={uploading}
+            aria-label="File input"
           />
 
-          {file && (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                setFile(null);
-                if (fileInputRef.current) fileInputRef.current.value = "";
-              }}
-              className="absolute top-2 right-2 rounded-full p-1 text-red-500 hover:bg-red-50 dark:hover:bg-red-950 transition-colors"
-              aria-label="Remove file"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          )}
-
-          {file ? (
-            <div className="text-center space-y-1 px-8">
-              <p className="font-medium truncate">{file.name}</p>
-              <p className="text-sm text-muted-foreground">{formatFileSize(file.size)}</p>
+          {files.length > 0 ? (
+            <div className="w-full h-full px-4 py-3 space-y-2 overflow-y-auto">
+              {files.map((file, idx) => (
+                <div
+                  key={`${file.name}-${idx}`}
+                  className="flex items-center gap-2 p-2 rounded bg-muted/50 group"
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{file.name}</p>
+                    <p className="text-xs text-muted-foreground">{formatFileSize(file.size)}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      removeFile(idx);
+                    }}
+                    className="rounded-full p-1 text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950 transition-colors"
+                    aria-label={`Remove ${file.name}`}
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              ))}
             </div>
           ) : (
             <div className="text-center space-y-1 px-8">
-              <p className="text-muted-foreground text-sm">Drag and drop a file here, or click to select</p>
-              <p className="text-xs text-muted-foreground">Click to browse files</p>
+              <p className="text-muted-foreground text-sm">
+                Drag and drop files here, or click to select
+              </p>
+              <p className="text-xs text-muted-foreground">Multiple files supported</p>
             </div>
           )}
         </div>
 
-        {/* Public toggle */}
-        <div className="flex items-center space-x-2">
-          <input
-            type="checkbox"
-            id="isPublic"
-            checked={isPublic}
-            onChange={(e) => setIsPublic(e.target.checked)}
-            disabled={uploading}
-            className="rounded border-gray-300"
-          />
-          <label htmlFor="isPublic" className="text-sm text-muted-foreground cursor-pointer">
-            Make file public
-          </label>
-        </div>
+        {/* Total size indicator */}
+        {files.length > 0 && (
+          <div className="text-sm text-muted-foreground">
+            {files.length} file{files.length > 1 ? "s" : ""} • {formatFileSize(totalSize)} total
+          </div>
+        )}
 
         {/* Upload progress */}
         {uploading && (
-          <div className="space-y-2">
+          <div className="space-y-2" role="status" aria-live="polite">
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Uploading...</span>
-              <span className="text-muted-foreground">{uploadProgress}%</span>
+              <span className="text-muted-foreground">{Math.round(uploadProgress)}%</span>
             </div>
-            <Progress value={uploadProgress} />
+            <Progress value={uploadProgress} aria-valuenow={uploadProgress} />
           </div>
         )}
 
         {/* Error message */}
         {error && (
-          <div className="p-3 rounded-md bg-destructive/10 text-destructive text-sm">
+          <div className="p-3 rounded-md bg-destructive/10 text-destructive text-sm" role="alert">
             {error}
           </div>
         )}
@@ -207,10 +228,13 @@ export const FileUpload = ({
         {/* Upload button */}
         <Button
           onClick={handleUpload}
-          disabled={!file || uploading}
+          disabled={files.length === 0 || uploading}
           className="w-full"
+          aria-label={`Upload ${files.length} file${files.length > 1 ? "s" : ""}`}
         >
-          {uploading ? "Uploading..." : "Upload File"}
+          {uploading
+            ? "Uploading..."
+            : `Upload ${files.length > 0 ? `${files.length} file${files.length > 1 ? "s" : ""}` : "File"}`}
         </Button>
       </CardContent>
     </Card>
