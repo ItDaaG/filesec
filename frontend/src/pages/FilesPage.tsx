@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { List, Grid3x3 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { FileSearchBar } from "@/components/files/FileSearchBar";
 import { FileExplorer } from "@/components/files/FileExplorer";
+import { FileUpload } from "@/components/files/FileUpload";
+import { FileViewToggle } from "@/components/files/FileViewToggle";
 
 export const FilesPage = () => {
   const [search, setSearch] = useState("");
@@ -15,28 +15,18 @@ export const FilesPage = () => {
       {/* Search bar + view toggle */}
       <div className="flex items-center justify-between gap-4">
         <FileSearchBar value={search} onChange={setSearch} />
-
-        <div className="flex items-center gap-1">
-          <Button
-            variant={viewMode === "list" ? "default" : "ghost"}
-            size="icon"
-            onClick={() => setViewMode("list")}
-            aria-label="List view"
-          >
-            <List className="h-4 w-4" />
-          </Button>
-          <Button
-            variant={viewMode === "grid" ? "default" : "ghost"}
-            size="icon"
-            onClick={() => setViewMode("grid")}
-            aria-label="Grid view"
-          >
-            <Grid3x3 className="h-4 w-4" />
-          </Button>
-        </div>
+        <FileViewToggle viewMode={viewMode} onChange={setViewMode} />
       </div>
 
-      <FileExplorer search={search} viewMode={viewMode} />
+      {/* Main layout: explorer + upload sidebar */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+        <div>
+          <FileExplorer search={search} viewMode={viewMode} />
+        </div>
+        <div className="lg:self-start">
+          <FileUpload />
+        </div>
+      </div>
     </div>
   );
 };
