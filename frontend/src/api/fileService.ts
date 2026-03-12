@@ -1,15 +1,14 @@
 import { api } from './client';
 import type { File as FileType, Folder } from '../types/file';
 
-export const uploadFile = async (file: File, isPublic: boolean = false): Promise<FileType> => {
-  const formData = new FormData();
+export const uploadFile = async (file: File, isPublic: boolean = false, sharedWith: string[] = []): Promise<FileType> => {
+  const formData = new FormData();  
   formData.append('file', file);
   formData.append('is_public', String(isPublic));
+  sharedWith.forEach((email) => formData.append('share_with', email));
 
   const { data } = await api.post<FileType>('/files/upload', formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
+    headers: { 'Content-Type': 'multipart/form-data' },
   });
 
   return data;

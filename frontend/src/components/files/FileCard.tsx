@@ -3,20 +3,13 @@ import type { File as FileType } from "@/types/file";
 import { File as FileIcon } from "lucide-react";
 import { DeleteButton } from "@/components/ui/DeleteButton";
 import { deleteFile as deleteFileApi } from "@/api/fileService";
+import { formatFileSize } from "@/lib/utils";
 
 interface FileCardProps {
   file: FileType;
   variant?: "list" | "grid";
   onClick?: (file: FileType) => void;
 }
-
-const formatBytes = (bytes: number): string => {
-  if (bytes === 0) return "0 B";
-  const k = 1024;
-  const sizes = ["B", "KB", "MB", "GB"];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return `${(bytes / Math.pow(k, i)).toFixed(2)} ${sizes[i]}`;
-};
 
 const formatDate = (dateString: string): string => {
   const diff = Date.now() - new Date(dateString).getTime();
@@ -82,7 +75,7 @@ export const FileCard = ({ file, variant = "list", onClick }: FileCardProps) => 
         <div className="text-center min-w-0 w-full px-2">
           <p className="text-sm font-medium truncate">{file.filename}</p>
           <p className="text-xs text-muted-foreground">
-            {formatBytes(file.file_size)} • {formatDate(file.created_at)}
+            {formatFileSize(file.file_size)} • {formatDate(file.created_at)}
           </p>
         </div>
 
@@ -112,7 +105,7 @@ export const FileCard = ({ file, variant = "list", onClick }: FileCardProps) => 
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium truncate">{file.filename}</p>
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <span>{formatBytes(file.file_size)}</span>
+          <span>{formatFileSize(file.file_size)}</span>
           <span>•</span>
           <span>{formatDate(file.created_at)}</span>
         </div>
