@@ -17,6 +17,8 @@ function AppRoutes() {
       <Route path="/signup" element={!isAuthenticated ? <SignUpPage /> : <Navigate to="/dashboard" replace />} />
       <Route path="/login" element={!isAuthenticated ? <LoginPage /> : <Navigate to="/dashboard" replace />} />
       <Route path="/dashboard" element={isAuthenticated ? <DashboardPage /> : <Navigate to="/login" replace />} />
+      <Route path="/files" element={isAuthenticated ? <FilesPage /> : <Navigate to="/login" replace />} />
+      <Route path="/files/folders/:folderId" element={isAuthenticated ? <FilesPage /> : <Navigate to="/login" replace />} />
       <Route path="*" element={<Navigate to={isAuthenticated ? '/dashboard' : '/'} replace />} />
     </Routes>
   )
