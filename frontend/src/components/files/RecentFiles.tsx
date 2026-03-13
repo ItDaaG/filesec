@@ -9,7 +9,7 @@ interface RecentFilesProps {
   onFileClick?: (file: FileType) => void;
 }
 
-export const RecentFiles = ({ maxFiles = 5, onFileClick }: RecentFilesProps) => {
+export const RecentFiles = ({ maxFiles = 3, onFileClick }: RecentFilesProps) => {
   const [files, setFiles] = useState<FileType[]>([]);
   const [loading, setLoading] = useState(true);
 

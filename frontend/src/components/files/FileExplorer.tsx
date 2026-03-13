@@ -21,33 +21,47 @@ type ExplorerItem =
 interface FileExplorerProps {
   search: string;
   viewMode: "list" | "grid";
+  /** null = root; number = contents of that folder */
+  folderId: number | null;
+  /** Called when the user clicks a folder to open it */
+  onFolderOpen: (folder: Folder) => void;
 }
 
 // --- Component ---
 
-export const FileExplorer = ({ search, viewMode }: FileExplorerProps) => {
+
+export const FileExplorer = ({ search, viewMode, folderId, onFolderOpen }: FileExplorerProps) => {
   const [files, setFiles] = useState<FileType[]>([]);
   const [folders, setFolders] = useState<Folder[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
 
   useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+
     const fetchData = async () => {
       try {
         const [fetchedFiles, fetchedFolders] = await Promise.all([
-          getMyFiles(),
-          getMyFolders(),
+          // At root: root_only=true; inside a folder: filter by folder_id
+          getMyFiles(folderId, folderId === null),
+          getMyFolders(folderId),
         ]);
-        setFiles(fetchedFiles);
-        setFolders(fetchedFolders);
+        if (!cancelled) {
+          setFiles(fetchedFiles);
+          setFolders(fetchedFolders);
+          setPage(1); // Reset pagination on folder navigation
+        }
       } catch (err) {
         console.error("Failed to load files/folders:", err);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
+
     fetchData();
-  }, []);
+    return () => { cancelled = true; };
+  }, [folderId]);
 
   const filteredFolders = useMemo(() => {
     if (!search) return folders;
@@ -100,15 +114,23 @@ export const FileExplorer = ({ search, viewMode }: FileExplorerProps) => {
         className={
           isGrid
             ? "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
-            : "space-y-1"
+            : "space-y-2"
         }
       >
         {paginatedItems.map((item) =>
           item.kind === "folder" ? (
             isGrid ? (
-              <GridFolderCard key={`folder-${item.data.id}`} folder={item.data} />
+              <GridFolderCard
+                key={`folder-${item.data.id}`}
+                folder={item.data}
+                onClick={onFolderOpen}
+              />
             ) : (
-              <FolderRow key={`folder-${item.data.id}`} folder={item.data} />
+              <FolderRow
+                key={`folder-${item.data.id}`}
+                folder={item.data}
+                onClick={onFolderOpen}
+              />
             )
           ) : (
             <FileCard
@@ -157,8 +179,22 @@ export const FileExplorer = ({ search, viewMode }: FileExplorerProps) => {
 
 // --- Sub-components ---
 
-const FolderRow = ({ folder }: { folder: Folder }) => (
-  <div className="flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors duration-150 hover:bg-muted/80 bg-muted/30">
+
+interface FolderRowProps {
+  folder: Folder;
+  onClick: (folder: Folder) => void;
+}
+
+const FolderRow = ({ folder, onClick }: FolderRowProps) => (
+  <div
+    className="flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors duration-150 hover:bg-muted/80 bg-muted/30"
+    onClick={() => onClick(folder)}
+    role="button"
+    tabIndex={0}
+    onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && onClick(folder)}
+    aria-label={`Open folder ${folder.name}`}
+  >
+
     <FolderIcon className="h-5 w-5 text-primary flex-shrink-0" />
     <div className="flex-1 min-w-0">
       <p className="text-sm font-medium truncate">{folder.name}</p>
@@ -169,8 +205,20 @@ const FolderRow = ({ folder }: { folder: Folder }) => (
   </div>
 );
 
-const GridFolderCard = ({ folder }: { folder: Folder }) => (
-  <div className="flex flex-col items-center gap-2 p-4 rounded-lg cursor-pointer transition-colors duration-150 hover:bg-muted/80 bg-muted/30 h-[140px] justify-center">
+interface GridFolderCardProps {
+  folder: Folder;
+  onClick: (folder: Folder) => void;
+}
+
+const GridFolderCard = ({ folder, onClick }: GridFolderCardProps) => (
+  <div
+    className="flex flex-col items-center gap-2 p-4 rounded-lg cursor-pointer transition-colors duration-150 hover:bg-muted/80 bg-muted/30 h-[140px] justify-center"
+    onClick={() => onClick(folder)}
+    role="button"
+    tabIndex={0}
+    onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && onClick(folder)}
+    aria-label={`Open folder ${folder.name}`}
+  >
     <FolderIcon className="h-8 w-8 text-primary" />
     <div className="text-center min-w-0 w-full px-2">
       <p className="text-sm font-medium truncate">{folder.name}</p>

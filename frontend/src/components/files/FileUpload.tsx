@@ -19,11 +19,12 @@ interface FileUploadState {
 interface FileUploadProps {
   onUploadSuccess?: (file: { id: number; filename: string; file_size: number }) => void;
   onUploadError?: (error: string) => void;
+  folderId?: number | null;
   className?: string;
 }
 
 
-export const FileUpload = ({ onUploadSuccess, onUploadError, className }: FileUploadProps) => {
+export const FileUpload = ({ onUploadSuccess, onUploadError, folderId, className }: FileUploadProps) => {
   const [uploads, setUploads] = useState<FileUploadState[]>([]);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -104,7 +105,7 @@ export const FileUpload = ({ onUploadSuccess, onUploadError, className }: FileUp
           });
         }, 200);
 
-        const response = await uploadFile(file, isPublic, sharedWith);
+        const response = await uploadFile(file, isPublic, sharedWith, folderId);
 
         clearInterval(progressInterval);
         completed++;

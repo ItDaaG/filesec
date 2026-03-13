@@ -1,11 +1,17 @@
 import { api } from './client';
 import type { File as FileType, Folder } from '../types/file';
 
-export const uploadFile = async (file: File, isPublic: boolean = false, sharedWith: string[] = []): Promise<FileType> => {
-  const formData = new FormData();  
+export const uploadFile = async (
+  file: File,
+  isPublic: boolean = false,
+  sharedWith: string[] = [],
+  folderId?: number | null,
+): Promise<FileType> => {
+  const formData = new FormData();
   formData.append('file', file);
   formData.append('is_public', String(isPublic));
   sharedWith.forEach((email) => formData.append('share_with', email));
+  if (folderId != null) formData.append('folder_id', String(folderId));
 
   const { data } = await api.post<FileType>('/files/upload', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
@@ -49,4 +55,26 @@ export const createFolder = async (name: string, parentId?: number | null): Prom
 
 export const deleteFolder = async (folderId: number): Promise<void> => {
   await api.delete(`/folders/${folderId}`);
+};
+
+
+export const getFolderById = async (folderId: number): Promise<Folder> => {
+  const { data } = await api.get<Folder>(`/folders/${folderId}`);
+  return data;
+};
+
+// e.g. folderId=5 (child of 3) → [{ id: 3, name: "Work" }, { id: 5, name: "Reports" }]
+export const buildBreadcrumbs = async (
+  folderId: number
+): Promise<{ id: number; name: string }[]> => {
+  const crumbs: { id: number; name: string }[] = [];
+  let currentId: number | null = folderId;
+
+  while (currentId !== null) {
+    const folder = await getFolderById(currentId);
+    crumbs.unshift({ id: folder.id, name: folder.name });
+    currentId = folder.parent_id;
+  }
+
+  return crumbs;
 };
