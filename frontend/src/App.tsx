@@ -4,6 +4,7 @@ import { SignUpPage } from './pages/SignUpPage'
 import { LoginPage } from './pages/LoginPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { LandingPage } from './pages/LandingPage'
+import { FilesPage } from './pages/FilesPage'
 import { useAuth } from './context/AuthContext'
 
 function AppRoutes() {

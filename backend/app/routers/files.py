@@ -46,8 +46,13 @@ def upload_file(
     )
 
     if share_with:
-        crud.share_file_with_users(db, db_file, share_with)
-
+        result = crud.share_file_with_users(db, db_file, share_with)
+        if result["owner"]:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"You cannot share a file with yourself")
+        if result["not_found"]:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Could not find users: {', '.join(result['not_found'])}")
+        if result["already_shared"]:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Users already shared with: {', '.join(result['already_shared'])}")
     return db_file
 
 
@@ -178,8 +183,13 @@ def share_file(
     if not file_obj:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found")
 
-    crud.share_file_with_users(db, file_obj, body.emails)
-    return {"detail": "Shared successfully"}
+    result = crud.share_file_with_users(db, file_obj, body.emails)
+    return {
+        "detail": "Shared successfully",
+        "shared": result["shared"],
+        "already_shared": result["already_shared"],
+        "not_found": result["not_found"],
+    }
 
 
 @router.delete("/{file_id}/share/{user_id}", status_code=status.HTTP_200_OK)

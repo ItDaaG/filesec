@@ -14,16 +14,18 @@ export const uploadFile = async (
   if (folderId != null) formData.append('folder_id', String(folderId));
 
   const { data } = await api.post<FileType>('/files/upload', formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
+    headers: { 'Content-Type': 'multipart/form-data' },
   });
 
   return data;
 };
 
-export const getMyFiles = async (): Promise<FileType[]> => {
-  const { data } = await api.get<FileType[]>('/files/');
+export const getMyFiles = async (folderId?: number | null, rootOnly?: boolean): Promise<FileType[]> => {
+  const params: Record<string, string> = {};
+  if (folderId != null) params.folder_id = String(folderId);
+  else if (rootOnly) params.root_only = 'true';
+
+  const { data } = await api.get<FileType[]>('/files/', { params });
   return data;
 };
 
@@ -54,6 +56,7 @@ export const createFolder = async (name: string, parentId?: number | null): Prom
 export const deleteFolder = async (folderId: number): Promise<void> => {
   await api.delete(`/folders/${folderId}`);
 };
+
 
 export const getFolderById = async (folderId: number): Promise<Folder> => {
   const { data } = await api.get<Folder>(`/folders/${folderId}`);

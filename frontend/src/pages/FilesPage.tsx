@@ -9,6 +9,7 @@ import { FileViewToggle } from "@/components/files/FileViewToggle";
 import { FileBreadcrumbs } from "@/components/files/FileBreadcrumbs";
 import type { Breadcrumb } from "@/components/files/FileBreadcrumbs";
 
+
 export const FilesPage = () => {
   const { folderId: folderIdParam } = useParams<{ folderId?: string }>();
   const navigate = useNavigate();

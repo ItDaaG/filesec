@@ -29,6 +29,7 @@ interface FileExplorerProps {
 
 // --- Component ---
 
+
 export const FileExplorer = ({ search, viewMode, folderId, onFolderOpen }: FileExplorerProps) => {
   const [files, setFiles] = useState<FileType[]>([]);
   const [folders, setFolders] = useState<Folder[]>([]);
@@ -178,6 +179,7 @@ export const FileExplorer = ({ search, viewMode, folderId, onFolderOpen }: FileE
 
 // --- Sub-components ---
 
+
 interface FolderRowProps {
   folder: Folder;
   onClick: (folder: Folder) => void;
@@ -192,6 +194,7 @@ const FolderRow = ({ folder, onClick }: FolderRowProps) => (
     onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && onClick(folder)}
     aria-label={`Open folder ${folder.name}`}
   >
+
     <FolderIcon className="h-5 w-5 text-primary flex-shrink-0" />
     <div className="flex-1 min-w-0">
       <p className="text-sm font-medium truncate">{folder.name}</p>

@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { signUp } from "@/api/authService";
+import { isValidEmail } from "@/lib/utils";
 
 export const SignUpForm = () => {
   const [error, setError] = useState<string | null>(null);
@@ -17,6 +18,11 @@ export const SignUpForm = () => {
       email: String(formData.get("email") ?? ""),
       password: String(formData.get("password") ?? ""),
     };
+
+    if (!isValidEmail(payload.email)) {
+      setError("Please enter a valid email address.");
+      return;
+    }
 
     try {
       await signUp(payload);
