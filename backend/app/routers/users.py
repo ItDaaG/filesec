@@ -1,8 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from sqlalchemy import func
 
-from .. import schemas, crud, models
+from .. import schemas, crud
 from ..database import get_db
 from ..auth import get_current_user, authenticate_user
 from ..models import User as UserModel
@@ -48,20 +47,15 @@ def delete_current_user(
 
 @router.get("/me/storage-stats", response_model=schemas.StorageStats)
 def get_storage_stats(
-    db: Session = Depends(get_db),
     current_user: UserModel = Depends(get_current_user),
 ):
     """Get storage usage statistics for the current user."""
-    # Calculate total storage used by summing file_size of all owned files
-    total_used = db.query(func.coalesce(func.sum(models.File.file_size), 0)).filter(
-        models.File.owner_id == current_user.id
-    ).scalar()
-    
     storage_limit = get_storage_limit_bytes(current_user.account_tier)
+    total_used = current_user.storage_used_bytes or 0
     storage_percentage = (total_used / storage_limit * 100) if storage_limit > 0 else 0.0
-    
+
     return {
-        "storage_used_bytes": int(total_used),
+        "storage_used_bytes": total_used,
         "storage_limit_bytes": storage_limit,
         "storage_used_percentage": round(storage_percentage, 2),
         "account_tier": current_user.account_tier,

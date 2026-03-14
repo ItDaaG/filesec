@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { getSharedWithMeFiles } from "@/api/fileService";
 import type { File as FileType } from "@/types/file";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,26 +11,18 @@ interface SharedWithMeProps {
 }
 
 export const SharedWithMe = ({ maxFiles = 5, onFileClick }: SharedWithMeProps) => {
-  const [files, setFiles] = useState<FileType[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: allFiles = [], isLoading: loading } = useQuery({
+    queryKey: ["shared-files"],
+    queryFn: getSharedWithMeFiles,
+  });
 
-  useEffect(() => {
-    const fetchShared = async () => {
-      try {
-        const all = await getSharedWithMeFiles();
-        const limited = [...all]
-          .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-          .slice(0, maxFiles);
-        setFiles(limited);
-      } catch (err) {
-        console.error("Failed to fetch shared-with-me files:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchShared();
-  }, [maxFiles]);
+  const files = useMemo(
+    () =>
+      [...allFiles]
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        .slice(0, maxFiles),
+    [allFiles, maxFiles],
+  );
 
   const formatBytes = (bytes: number) => {
     if (bytes === 0) return "0 B";
@@ -112,4 +105,3 @@ export const SharedWithMe = ({ maxFiles = 5, onFileClick }: SharedWithMeProps) =
     </Card>
   );
 };
-

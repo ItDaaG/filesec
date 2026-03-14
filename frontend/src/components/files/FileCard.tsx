@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { File as FileType } from "@/types/file";
 import { File as FileIcon } from "lucide-react";
 import { DeleteButton } from "@/components/ui/DeleteButton";
@@ -25,28 +26,42 @@ const formatDate = (dateString: string): string => {
 
 export const FileCard = ({ file, variant = "list", onClick }: FileCardProps) => {
   const [hovered, setHovered] = useState(false);
-  const [deleted, setDeleted] = useState(false);
-  const [deleting, setDeleting] = useState(false);
   const cancelRef = useRef<(() => void) | null>(null);
+  const queryClient = useQueryClient();
+
+  const deleteMutation = useMutation({
+    mutationFn: () => deleteFileApi(file.id),
+    onMutate: async () => {
+      // Cancel in-flight file queries so they don't overwrite our optimistic update
+      await queryClient.cancelQueries({ queryKey: ["files"] });
+
+      // Snapshot every ['files', ...] query for rollback
+      const previous = queryClient.getQueriesData<FileType[]>({ queryKey: ["files"] });
+
+      // Optimistically remove this file from all file caches
+      queryClient.setQueriesData<FileType[]>(
+        { queryKey: ["files"] },
+        (old) => old?.filter((f) => f.id !== file.id),
+      );
+
+      return { previous };
+    },
+    onError: (_err, _vars, context) => {
+      // Rollback on failure
+      context?.previous.forEach(([key, data]) => queryClient.setQueryData(key, data));
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["files"] });
+      queryClient.invalidateQueries({ queryKey: ["storage-stats"] });
+    },
+  });
 
   const handleMouseLeave = () => {
     setHovered(false);
     cancelRef.current?.();
   };
 
-  const handleDelete = async () => {
-    try {
-      setDeleting(true);
-      await deleteFileApi(file.id);
-      setDeleted(true);
-    } catch (err) {
-      console.error("Delete failed:", err);
-    } finally {
-      setDeleting(false);
-    }
-  };
-
-  if (deleted) return null;
+  const handleDelete = () => deleteMutation.mutate();
 
   if (variant === "grid") {
     return (
@@ -63,7 +78,7 @@ export const FileCard = ({ file, variant = "list", onClick }: FileCardProps) => 
         {/* Delete button — top-right corner */}
         <div className="absolute top-2 right-2">
           <DeleteButton
-            visible={hovered && !deleting}
+            visible={hovered && !deleteMutation.isPending}
             onConfirm={handleDelete}
             onCancelRef={cancelRef}
             ariaLabel={`Delete ${file.filename}`}
@@ -119,7 +134,7 @@ export const FileCard = ({ file, variant = "list", onClick }: FileCardProps) => 
         )}
 
         <DeleteButton
-          visible={hovered && !deleting}
+          visible={hovered && !deleteMutation.isPending}
           onConfirm={handleDelete}
           onCancelRef={cancelRef}
           ariaLabel={`Delete ${file.filename}`}

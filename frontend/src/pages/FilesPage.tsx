@@ -20,7 +20,6 @@ export const FilesPage = () => {
   const [search, setSearch] = useState("");
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
   const [breadcrumbs, setBreadcrumbs] = useState<Breadcrumb[]>([]);
-  const [refreshKey, setRefreshKey] = useState(0);
 
   // Rebuild breadcrumbs whenever folderId changes in the URL.
   // This handles refresh, direct links, and browser back/forward correctly.
@@ -63,7 +62,7 @@ export const FilesPage = () => {
       <div className="flex items-center justify-between gap-4">
         <FileSearchBar value={search} onChange={setSearch} />
         <div className="flex items-center gap-2">
-          <CreateFolderButton parentId={folderId} onCreated={() => setRefreshKey((k) => k + 1)} />
+          <CreateFolderButton parentId={folderId} />
           <FileViewToggle viewMode={viewMode} onChange={setViewMode} />
         </div>
       </div>
@@ -76,7 +75,6 @@ export const FilesPage = () => {
             viewMode={viewMode}
             folderId={folderId}
             onFolderOpen={handleFolderOpen}
-            refreshKey={refreshKey}
           />
         </div>
         <div className="lg:self-start">

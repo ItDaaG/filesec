@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { FolderPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,14 +14,14 @@ import { createFolder } from "@/api/fileService";
 
 interface CreateFolderButtonProps {
   parentId: number | null;
-  onCreated: () => void;
 }
 
-export const CreateFolderButton = ({ parentId, onCreated }: CreateFolderButtonProps) => {
+export const CreateFolderButton = ({ parentId }: CreateFolderButtonProps) => {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
   const handleOpen = () => {
     setName("");
@@ -42,7 +43,7 @@ export const CreateFolderButton = ({ parentId, onCreated }: CreateFolderButtonPr
     try {
       await createFolder(trimmed, parentId);
       setOpen(false);
-      onCreated();
+      queryClient.invalidateQueries({ queryKey: ["folders"] });
     } catch (err: any) {
       setError(err.response?.data?.detail || "Failed to create folder");
     } finally {

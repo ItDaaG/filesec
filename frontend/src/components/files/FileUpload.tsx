@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { uploadFile } from "@/api/fileService";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,6 +26,7 @@ interface FileUploadProps {
 
 
 export const FileUpload = ({ onUploadSuccess, onUploadError, folderId, className }: FileUploadProps) => {
+  const queryClient = useQueryClient();
   const [uploads, setUploads] = useState<FileUploadState[]>([]);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -115,6 +117,8 @@ export const FileUpload = ({ onUploadSuccess, onUploadError, folderId, className
 
       setUploads([]);
       if (fileInputRef.current) fileInputRef.current.value = "";
+      queryClient.invalidateQueries({ queryKey: ["files"] });
+      queryClient.invalidateQueries({ queryKey: ["storage-stats"] });
     } catch (err: any) {
       const msg = err.response?.data?.detail || err.message || "Upload failed";
       setError(msg);
