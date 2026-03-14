@@ -8,6 +8,7 @@ import { FileUpload } from "@/components/files/FileUpload";
 import { FileViewToggle } from "@/components/files/FileViewToggle";
 import { FileBreadcrumbs } from "@/components/files/FileBreadcrumbs";
 import type { Breadcrumb } from "@/components/files/FileBreadcrumbs";
+import { CreateFolderButton } from "@/components/files/CreateFolderButton";
 
 
 export const FilesPage = () => {
@@ -19,6 +20,7 @@ export const FilesPage = () => {
   const [search, setSearch] = useState("");
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
   const [breadcrumbs, setBreadcrumbs] = useState<Breadcrumb[]>([]);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   // Rebuild breadcrumbs whenever folderId changes in the URL.
   // This handles refresh, direct links, and browser back/forward correctly.
@@ -57,10 +59,13 @@ export const FilesPage = () => {
       {/* Breadcrumbs — only visible when inside a folder */}
       <FileBreadcrumbs breadcrumbs={breadcrumbs} onNavigate={handleBreadcrumbNavigate} />
 
-      {/* Search bar + view toggle */}
+      {/* Search bar + actions */}
       <div className="flex items-center justify-between gap-4">
         <FileSearchBar value={search} onChange={setSearch} />
-        <FileViewToggle viewMode={viewMode} onChange={setViewMode} />
+        <div className="flex items-center gap-2">
+          <CreateFolderButton parentId={folderId} onCreated={() => setRefreshKey((k) => k + 1)} />
+          <FileViewToggle viewMode={viewMode} onChange={setViewMode} />
+        </div>
       </div>
 
       {/* Main layout: explorer left, upload sidebar right */}
@@ -71,6 +76,7 @@ export const FilesPage = () => {
             viewMode={viewMode}
             folderId={folderId}
             onFolderOpen={handleFolderOpen}
+            refreshKey={refreshKey}
           />
         </div>
         <div className="lg:self-start">

@@ -1,8 +1,8 @@
 import { useEffect, useState, useMemo } from "react";
 import { getMyFiles, getMyFolders } from "@/api/fileService";
 import type { File as FileType, Folder } from "@/types/file";
-import { Folder as FolderIcon } from "lucide-react";
 import { FileCard } from "@/components/files/FileCard";
+import { FolderCard } from "@/components/files/FolderCard";
 import {
   Pagination,
   PaginationContent,
@@ -25,12 +25,14 @@ interface FileExplorerProps {
   folderId: number | null;
   /** Called when the user clicks a folder to open it */
   onFolderOpen: (folder: Folder) => void;
+  /** Increment to trigger a re-fetch (e.g. after creating a folder) */
+  refreshKey?: number;
 }
 
 // --- Component ---
 
 
-export const FileExplorer = ({ search, viewMode, folderId, onFolderOpen }: FileExplorerProps) => {
+export const FileExplorer = ({ search, viewMode, folderId, onFolderOpen, refreshKey }: FileExplorerProps) => {
   const [files, setFiles] = useState<FileType[]>([]);
   const [folders, setFolders] = useState<Folder[]>([]);
   const [loading, setLoading] = useState(true);
@@ -61,7 +63,7 @@ export const FileExplorer = ({ search, viewMode, folderId, onFolderOpen }: FileE
 
     fetchData();
     return () => { cancelled = true; };
-  }, [folderId]);
+  }, [folderId, refreshKey]);
 
   const filteredFolders = useMemo(() => {
     if (!search) return folders;
@@ -119,19 +121,13 @@ export const FileExplorer = ({ search, viewMode, folderId, onFolderOpen }: FileE
       >
         {paginatedItems.map((item) =>
           item.kind === "folder" ? (
-            isGrid ? (
-              <GridFolderCard
-                key={`folder-${item.data.id}`}
-                folder={item.data}
-                onClick={onFolderOpen}
-              />
-            ) : (
-              <FolderRow
-                key={`folder-${item.data.id}`}
-                folder={item.data}
-                onClick={onFolderOpen}
-              />
-            )
+            <FolderCard
+              key={`folder-${item.data.id}`}
+              folder={item.data}
+              variant={viewMode}
+              onClick={onFolderOpen}
+              onDeleted={() => setFolders((prev) => prev.filter((f) => f.id !== item.data.id))}
+            />
           ) : (
             <FileCard
               key={`file-${item.data.id}`}
@@ -177,54 +173,3 @@ export const FileExplorer = ({ search, viewMode, folderId, onFolderOpen }: FileE
   );
 };
 
-// --- Sub-components ---
-
-
-interface FolderRowProps {
-  folder: Folder;
-  onClick: (folder: Folder) => void;
-}
-
-const FolderRow = ({ folder, onClick }: FolderRowProps) => (
-  <div
-    className="flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors duration-150 hover:bg-muted/80 bg-muted/30"
-    onClick={() => onClick(folder)}
-    role="button"
-    tabIndex={0}
-    onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && onClick(folder)}
-    aria-label={`Open folder ${folder.name}`}
-  >
-
-    <FolderIcon className="h-5 w-5 text-primary flex-shrink-0" />
-    <div className="flex-1 min-w-0">
-      <p className="text-sm font-medium truncate">{folder.name}</p>
-      <p className="text-xs text-muted-foreground">
-        {new Date(folder.created_at).toLocaleDateString()}
-      </p>
-    </div>
-  </div>
-);
-
-interface GridFolderCardProps {
-  folder: Folder;
-  onClick: (folder: Folder) => void;
-}
-
-const GridFolderCard = ({ folder, onClick }: GridFolderCardProps) => (
-  <div
-    className="flex flex-col items-center gap-2 p-4 rounded-lg cursor-pointer transition-colors duration-150 hover:bg-muted/80 bg-muted/30 h-[140px] justify-center"
-    onClick={() => onClick(folder)}
-    role="button"
-    tabIndex={0}
-    onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && onClick(folder)}
-    aria-label={`Open folder ${folder.name}`}
-  >
-    <FolderIcon className="h-8 w-8 text-primary" />
-    <div className="text-center min-w-0 w-full px-2">
-      <p className="text-sm font-medium truncate">{folder.name}</p>
-      <p className="text-xs text-muted-foreground">
-        {new Date(folder.created_at).toLocaleDateString()}
-      </p>
-    </div>
-  </div>
-);
