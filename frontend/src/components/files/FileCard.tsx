@@ -5,6 +5,7 @@ import { File as FileIcon } from "lucide-react";
 import { DeleteButton } from "@/components/ui/DeleteButton";
 import { deleteFile as deleteFileApi } from "@/api/fileService";
 import { formatFileSize } from "@/lib/utils";
+import { QUERY_KEYS } from "@/lib/queryKeys";
 
 interface FileCardProps {
   file: FileType;
@@ -33,14 +34,14 @@ export const FileCard = ({ file, variant = "list", onClick }: FileCardProps) => 
     mutationFn: () => deleteFileApi(file.id),
     onMutate: async () => {
       // Cancel in-flight file queries so they don't overwrite our optimistic update
-      await queryClient.cancelQueries({ queryKey: ["files"] });
+      await queryClient.cancelQueries({ queryKey: QUERY_KEYS.files.all() });
 
       // Snapshot every ['files', ...] query for rollback
-      const previous = queryClient.getQueriesData<FileType[]>({ queryKey: ["files"] });
+      const previous = queryClient.getQueriesData<FileType[]>({ queryKey: QUERY_KEYS.files.all() });
 
       // Optimistically remove this file from all file caches
       queryClient.setQueriesData<FileType[]>(
-        { queryKey: ["files"] },
+        { queryKey: QUERY_KEYS.files.all() },
         (old) => old?.filter((f) => f.id !== file.id),
       );
 
@@ -51,8 +52,8 @@ export const FileCard = ({ file, variant = "list", onClick }: FileCardProps) => 
       context?.previous.forEach(([key, data]) => queryClient.setQueryData(key, data));
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["files"] });
-      queryClient.invalidateQueries({ queryKey: ["storage-stats"] });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.files.all() });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.storageStats() });
     },
   });
 

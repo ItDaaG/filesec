@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getSharedWithMeFiles } from "@/api/fileService";
+import { QUERY_KEYS } from "@/lib/queryKeys";
 import type { File as FileType } from "@/types/file";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { File as FileIcon, User } from "lucide-react";
@@ -12,7 +13,7 @@ interface SharedWithMeProps {
 
 export const SharedWithMe = ({ maxFiles = 5, onFileClick }: SharedWithMeProps) => {
   const { data: allFiles = [], isLoading: loading } = useQuery({
-    queryKey: ["shared-files"],
+    queryKey: QUERY_KEYS.sharedFiles(),
     queryFn: getSharedWithMeFiles,
   });
 

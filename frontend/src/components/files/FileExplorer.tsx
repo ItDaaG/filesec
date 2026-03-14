@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getMyFiles, getMyFolders } from "@/api/fileService";
+import { QUERY_KEYS } from "@/lib/queryKeys";
 import type { File as FileType, Folder } from "@/types/file";
 import { FileCard } from "@/components/files/FileCard";
 import { FolderCard } from "@/components/files/FolderCard";
@@ -34,12 +35,12 @@ export const FileExplorer = ({ search, viewMode, folderId, onFolderOpen }: FileE
   const [page, setPage] = useState(1);
 
   const { data: files = [], isLoading: filesLoading } = useQuery({
-    queryKey: ["files", folderId],
+    queryKey: QUERY_KEYS.files.byFolder(folderId),
     queryFn: () => getMyFiles(folderId, folderId === null),
   });
 
   const { data: folders = [], isLoading: foldersLoading } = useQuery({
-    queryKey: ["folders", folderId],
+    queryKey: QUERY_KEYS.folders.byParent(folderId),
     queryFn: () => getMyFolders(folderId),
   });
 

@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { getStorageStats } from "@/api/authService";
+import { QUERY_KEYS } from "@/lib/queryKeys";
 import { CircularProgress } from "@/components/ui/circular-progress";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -13,7 +14,7 @@ function formatBytes(bytes: number): string {
 
 export const StorageStatsCard = () => {
   const { data: storageStats, isLoading } = useQuery({
-    queryKey: ["storage-stats"],
+    queryKey: QUERY_KEYS.storageStats(),
     queryFn: getStorageStats,
   });
 

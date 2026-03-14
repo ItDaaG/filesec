@@ -4,6 +4,7 @@ import type { File as FileType, Folder } from "@/types/file";
 import { Folder as FolderIcon } from "lucide-react";
 import { DeleteButton } from "@/components/ui/DeleteButton";
 import { deleteFolder as deleteFolderApi } from "@/api/fileService";
+import { QUERY_KEYS } from "@/lib/queryKeys";
 
 interface FolderCardProps {
   folder: Folder;
@@ -19,12 +20,12 @@ export const FolderCard = ({ folder, variant = "list", onClick }: FolderCardProp
   const deleteMutation = useMutation({
     mutationFn: () => deleteFolderApi(folder.id),
     onMutate: async () => {
-      await queryClient.cancelQueries({ queryKey: ["folders"] });
+      await queryClient.cancelQueries({ queryKey: QUERY_KEYS.folders.all() });
 
-      const previousFolders = queryClient.getQueriesData<Folder[]>({ queryKey: ["folders"] });
+      const previousFolders = queryClient.getQueriesData<Folder[]>({ queryKey: QUERY_KEYS.folders.all() });
 
       queryClient.setQueriesData<Folder[]>(
-        { queryKey: ["folders"] },
+        { queryKey: QUERY_KEYS.folders.all() },
         (old) => old?.filter((f) => f.id !== folder.id),
       );
 
@@ -35,9 +36,9 @@ export const FolderCard = ({ folder, variant = "list", onClick }: FolderCardProp
     },
     onSettled: () => {
       // Deleting a folder may cascade-delete its files, so invalidate both
-      queryClient.invalidateQueries({ queryKey: ["folders"] });
-      queryClient.invalidateQueries({ queryKey: ["files"] });
-      queryClient.invalidateQueries({ queryKey: ["storage-stats"] });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.folders.all() });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.files.all() });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.storageStats() });
     },
   });
 
