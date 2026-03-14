@@ -1,6 +1,6 @@
 import os
-from typing import List
-from fastapi import APIRouter, Depends, File, Form, UploadFile, HTTPException, status
+from typing import List, Optional
+from fastapi import APIRouter, Depends, File, Form, Query, UploadFile, HTTPException, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
@@ -19,12 +19,19 @@ router = APIRouter(prefix="/files", tags=["files"])
 def upload_file(
     file: UploadFile = File(...),
     is_public: bool = Form(False),
+    folder_id: Optional[int] = Form(None),
     share_with: List[str] = Form(default=[]),
     db: Session = Depends(get_db),
     current_user: UserModel = Depends(get_current_user),
 ):
     if not file.filename:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Filename is required")
+
+    # Validate folder ownership if provided
+    if folder_id is not None:
+        folder = crud.get_folder_by_id(db, folder_id)
+        if not folder or folder.owner_id != current_user.id:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Folder not found")
 
     file_path, file_size = save_file(file, current_user.id)
 
@@ -35,21 +42,33 @@ def upload_file(
         file_path=file_path,
         file_size=file_size,
         is_public=is_public,
+        folder_id=folder_id,
     )
 
     if share_with:
-        crud.share_file_with_users(db, db_file, share_with)
-
+        result = crud.share_file_with_users(db, db_file, share_with)
+        if result["owner"]:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"You cannot share a file with yourself")
+        if result["not_found"]:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Could not find users: {', '.join(result['not_found'])}")
+        if result["already_shared"]:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Users already shared with: {', '.join(result['already_shared'])}")
     return db_file
 
 
 @router.get("/", response_model=list[schemas.FileOut])
 def list_my_files(
+    folder_id: Optional[int] = Query(None, description="Filter by folder. Omit for all files."),
+    root_only: bool = Query(False, description="If true, return only files not in any folder."),
     db: Session = Depends(get_db),
     current_user: UserModel = Depends(get_current_user),
 ):
-    files = db.query(crud.models.File).filter(crud.models.File.owner_id == current_user.id).all()
-    return files
+    query = db.query(models.File).filter(models.File.owner_id == current_user.id)
+    if folder_id is not None:
+        query = query.filter(models.File.folder_id == folder_id)
+    elif root_only:
+        query = query.filter(models.File.folder_id.is_(None))
+    return query.all()
 
 
 @router.get("/shared-with-me", response_model=list[schemas.FileOut])
@@ -164,8 +183,13 @@ def share_file(
     if not file_obj:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found")
 
-    crud.share_file_with_users(db, file_obj, body.emails)
-    return {"detail": "Shared successfully"}
+    result = crud.share_file_with_users(db, file_obj, body.emails)
+    return {
+        "detail": "Shared successfully",
+        "shared": result["shared"],
+        "already_shared": result["already_shared"],
+        "not_found": result["not_found"],
+    }
 
 
 @router.delete("/{file_id}/share/{user_id}", status_code=status.HTTP_200_OK)

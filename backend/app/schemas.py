@@ -50,5 +50,25 @@ class FileOut(FileBase):
     file_path: str
     file_size: int
     owner_id: int
+    folder_id: Optional[int] = None
     created_at: datetime
+    model_config = ConfigDict(from_attributes=True)
+
+# --- FOLDER SCHEMAS ---
+class FolderBase(BaseModel):
+    name: str = Field(..., min_length=1, max_length=255)
+
+class FolderCreate(FolderBase):
+    parent_id: Optional[int] = None
+
+class FolderUpdate(BaseModel):
+    name: Optional[str] = Field(None, min_length=1, max_length=255)
+    parent_id: Optional[int] = None
+
+class FolderOut(FolderBase):
+    id: int
+    owner_id: int
+    parent_id: Optional[int] = None
+    created_at: datetime
+    updated_at: datetime
     model_config = ConfigDict(from_attributes=True)
