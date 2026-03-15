@@ -1,5 +1,7 @@
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { getMyFiles } from "@/api/fileService";
+import { QUERY_KEYS } from "@/lib/queryKeys";
 import type { File as FileType } from "@/types/file";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { FileCard } from "@/components/files/FileCard";
@@ -10,25 +12,18 @@ interface RecentFilesProps {
 }
 
 export const RecentFiles = ({ maxFiles = 3, onFileClick }: RecentFilesProps) => {
-  const [files, setFiles] = useState<FileType[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: allFiles = [], isLoading: loading } = useQuery({
+    queryKey: QUERY_KEYS.files.all(),
+    queryFn: () => getMyFiles(),
+  });
 
-  useEffect(() => {
-    const fetchFiles = async () => {
-      try {
-        const allFiles = await getMyFiles();
-        const sorted = [...allFiles]
-          .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-          .slice(0, maxFiles);
-        setFiles(sorted);
-      } catch (err) {
-        console.error("Failed to fetch files:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchFiles();
-  }, [maxFiles]);
+  const files = useMemo(
+    () =>
+      [...allFiles]
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        .slice(0, maxFiles),
+    [allFiles, maxFiles],
+  );
 
   if (loading) {
     return (

@@ -61,6 +61,12 @@ def create_file_for_user(
         folder_id=folder_id,
     )
     db.add(db_file)
+
+    # Increment storage counter
+    owner = db.query(models.User).filter(models.User.id == owner_id).first()
+    if owner:
+        owner.storage_used_bytes = (owner.storage_used_bytes or 0) + file_size
+
     db.commit()
     db.refresh(db_file)
     return db_file

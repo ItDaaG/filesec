@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import type { Folder } from "@/types/file";
 import { buildBreadcrumbs } from "@/api/fileService";
+import { QUERY_KEYS } from "@/lib/queryKeys";
 import { FileSearchBar } from "@/components/files/FileSearchBar";
 import { FileExplorer } from "@/components/files/FileExplorer";
 import { FileUpload } from "@/components/files/FileUpload";
 import { FileViewToggle } from "@/components/files/FileViewToggle";
 import { FileBreadcrumbs } from "@/components/files/FileBreadcrumbs";
-import type { Breadcrumb } from "@/components/files/FileBreadcrumbs";
 import { CreateFolderButton } from "@/components/files/CreateFolderButton";
 
 
@@ -19,21 +20,12 @@ export const FilesPage = () => {
 
   const [search, setSearch] = useState("");
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
-  const [breadcrumbs, setBreadcrumbs] = useState<Breadcrumb[]>([]);
-  const [refreshKey, setRefreshKey] = useState(0);
 
-  // Rebuild breadcrumbs whenever folderId changes in the URL.
-  // This handles refresh, direct links, and browser back/forward correctly.
-  useEffect(() => {
-    if (folderId === null) {
-      setBreadcrumbs([]);
-      return;
-    }
-
-    buildBreadcrumbs(folderId)
-      .then(setBreadcrumbs)
-      .catch(() => setBreadcrumbs([]));
-  }, [folderId]);
+  const { data: breadcrumbs = [], isLoading: breadcrumbsLoading } = useQuery({
+    queryKey: QUERY_KEYS.breadcrumbs(folderId),
+    queryFn: () => folderId ? buildBreadcrumbs(folderId) : [],
+    enabled: folderId !== null,
+  });
 
   // Reset search when navigating into/out of folders
   useEffect(() => {
@@ -57,13 +49,13 @@ export const FilesPage = () => {
       <h1 className="text-3xl font-bold">My Files</h1>
 
       {/* Breadcrumbs — only visible when inside a folder */}
-      <FileBreadcrumbs breadcrumbs={breadcrumbs} onNavigate={handleBreadcrumbNavigate} />
+      <FileBreadcrumbs breadcrumbs={breadcrumbs} onNavigate={handleBreadcrumbNavigate} isLoading={breadcrumbsLoading} />
 
       {/* Search bar + actions */}
       <div className="flex items-center justify-between gap-4">
         <FileSearchBar value={search} onChange={setSearch} />
         <div className="flex items-center gap-2">
-          <CreateFolderButton parentId={folderId} onCreated={() => setRefreshKey((k) => k + 1)} />
+          <CreateFolderButton parentId={folderId} />
           <FileViewToggle viewMode={viewMode} onChange={setViewMode} />
         </div>
       </div>
@@ -76,7 +68,6 @@ export const FilesPage = () => {
             viewMode={viewMode}
             folderId={folderId}
             onFolderOpen={handleFolderOpen}
-            refreshKey={refreshKey}
           />
         </div>
         <div className="lg:self-start">

@@ -1,5 +1,7 @@
-import { useEffect, useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { getMyFiles, getMyFolders } from "@/api/fileService";
+import { QUERY_KEYS } from "@/lib/queryKeys";
 import type { File as FileType, Folder } from "@/types/file";
 import { FileCard } from "@/components/files/FileCard";
 import { FolderCard } from "@/components/files/FolderCard";
@@ -25,45 +27,27 @@ interface FileExplorerProps {
   folderId: number | null;
   /** Called when the user clicks a folder to open it */
   onFolderOpen: (folder: Folder) => void;
-  /** Increment to trigger a re-fetch (e.g. after creating a folder) */
-  refreshKey?: number;
 }
 
 // --- Component ---
 
-
-export const FileExplorer = ({ search, viewMode, folderId, onFolderOpen, refreshKey }: FileExplorerProps) => {
-  const [files, setFiles] = useState<FileType[]>([]);
-  const [folders, setFolders] = useState<Folder[]>([]);
-  const [loading, setLoading] = useState(true);
+export const FileExplorer = ({ search, viewMode, folderId, onFolderOpen }: FileExplorerProps) => {
   const [page, setPage] = useState(1);
 
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
+  const { data: files = [], isLoading: filesLoading } = useQuery({
+    queryKey: QUERY_KEYS.files.byFolder(folderId),
+    queryFn: () => getMyFiles(folderId, folderId === null),
+  });
 
-    const fetchData = async () => {
-      try {
-        const [fetchedFiles, fetchedFolders] = await Promise.all([
-          // At root: root_only=true; inside a folder: filter by folder_id
-          getMyFiles(folderId, folderId === null),
-          getMyFolders(folderId),
-        ]);
-        if (!cancelled) {
-          setFiles(fetchedFiles);
-          setFolders(fetchedFolders);
-          setPage(1); // Reset pagination on folder navigation
-        }
-      } catch (err) {
-        console.error("Failed to load files/folders:", err);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
+  const { data: folders = [], isLoading: foldersLoading } = useQuery({
+    queryKey: QUERY_KEYS.folders.byParent(folderId),
+    queryFn: () => getMyFolders(folderId),
+  });
 
-    fetchData();
-    return () => { cancelled = true; };
-  }, [folderId, refreshKey]);
+  const loading = filesLoading || foldersLoading;
+
+  // Reset pagination when folder or search changes
+  useEffect(() => { setPage(1); }, [folderId, search]);
 
   const filteredFolders = useMemo(() => {
     if (!search) return folders;
@@ -83,11 +67,6 @@ export const FileExplorer = ({ search, viewMode, folderId, onFolderOpen, refresh
   ], [filteredFolders, filteredFiles]);
 
   const totalPages = Math.max(1, Math.ceil(allItems.length / ITEMS_PER_PAGE));
-
-  // Reset to page 1 when search changes
-  useEffect(() => {
-    setPage(1);
-  }, [search]);
 
   const paginatedItems = useMemo(() => {
     const start = (page - 1) * ITEMS_PER_PAGE;
@@ -126,7 +105,6 @@ export const FileExplorer = ({ search, viewMode, folderId, onFolderOpen, refresh
               folder={item.data}
               variant={viewMode}
               onClick={onFolderOpen}
-              onDeleted={() => setFolders((prev) => prev.filter((f) => f.id !== item.data.id))}
             />
           ) : (
             <FileCard
@@ -172,4 +150,3 @@ export const FileExplorer = ({ search, viewMode, folderId, onFolderOpen, refresh
     </div>
   );
 };
-

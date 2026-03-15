@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
-import { getStorageStats, type StorageStats } from "@/api/authService";
+import { useQuery } from "@tanstack/react-query";
+import { getStorageStats } from "@/api/authService";
+import { QUERY_KEYS } from "@/lib/queryKeys";
 import { CircularProgress } from "@/components/ui/circular-progress";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -12,25 +13,12 @@ function formatBytes(bytes: number): string {
 }
 
 export const StorageStatsCard = () => {
-  const [storageStats, setStorageStats] = useState<StorageStats | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { data: storageStats, isLoading } = useQuery({
+    queryKey: QUERY_KEYS.storageStats(),
+    queryFn: getStorageStats,
+  });
 
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const stats = await getStorageStats();
-        setStorageStats(stats);
-      } catch (error) {
-        console.error("Failed to fetch storage stats:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchStats();
-  }, []);
-
-  if (loading || !storageStats) {
+  if (isLoading || !storageStats) {
     return (
       <Card className="w-full max-w-md">
         <CardContent className="p-6">

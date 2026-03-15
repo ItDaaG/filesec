@@ -1,41 +1,53 @@
 import { useRef, useState } from "react";
-import type { Folder } from "@/types/file";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import type { File as FileType, Folder } from "@/types/file";
 import { Folder as FolderIcon } from "lucide-react";
 import { DeleteButton } from "@/components/ui/DeleteButton";
 import { deleteFolder as deleteFolderApi } from "@/api/fileService";
+import { QUERY_KEYS } from "@/lib/queryKeys";
 
 interface FolderCardProps {
   folder: Folder;
   variant?: "list" | "grid";
   onClick: (folder: Folder) => void;
-  onDeleted?: (folder: Folder) => void;
 }
 
-export const FolderCard = ({ folder, variant = "list", onClick, onDeleted }: FolderCardProps) => {
+export const FolderCard = ({ folder, variant = "list", onClick }: FolderCardProps) => {
   const [hovered, setHovered] = useState(false);
-  const [deleted, setDeleted] = useState(false);
-  const [deleting, setDeleting] = useState(false);
   const cancelRef = useRef<(() => void) | null>(null);
+  const queryClient = useQueryClient();
+
+  const deleteMutation = useMutation({
+    mutationFn: () => deleteFolderApi(folder.id),
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey: QUERY_KEYS.folders.all() });
+
+      const previousFolders = queryClient.getQueriesData<Folder[]>({ queryKey: QUERY_KEYS.folders.all() });
+
+      queryClient.setQueriesData<Folder[]>(
+        { queryKey: QUERY_KEYS.folders.all() },
+        (old) => old?.filter((f) => f.id !== folder.id),
+      );
+
+      return { previousFolders };
+    },
+    onError: (_err, _vars, context) => {
+      context?.previousFolders.forEach(([key, data]) => queryClient.setQueryData(key, data));
+    },
+    onSettled: () => {
+      // Deleting a folder may cascade-delete its files, so invalidate both
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.folders.all() });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.files.all() });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.storageStats() });
+    },
+  });
 
   const handleMouseLeave = () => {
     setHovered(false);
     cancelRef.current?.();
   };
 
-  const handleDelete = async () => {
-    try {
-      setDeleting(true);
-      await deleteFolderApi(folder.id);
-      setDeleted(true);
-      onDeleted?.(folder);
-    } catch (err) {
-      console.error("Delete folder failed:", err);
-    } finally {
-      setDeleting(false);
-    }
-  };
-
-  if (deleted) return null;
+  const handleDelete = () => deleteMutation.mutate();
 
   if (variant === "grid") {
     return (
@@ -55,7 +67,7 @@ export const FolderCard = ({ folder, variant = "list", onClick, onDeleted }: Fol
       >
         <div className="absolute top-2 right-2">
           <DeleteButton
-            visible={hovered && !deleting}
+            visible={hovered && !deleteMutation.isPending}
             onConfirm={handleDelete}
             onCancelRef={cancelRef}
             ariaLabel={`Delete folder ${folder.name}`}
@@ -100,7 +112,7 @@ export const FolderCard = ({ folder, variant = "list", onClick, onDeleted }: Fol
       </div>
 
       <DeleteButton
-        visible={hovered && !deleting}
+        visible={hovered && !deleteMutation.isPending}
         onConfirm={handleDelete}
         onCancelRef={cancelRef}
         ariaLabel={`Delete folder ${folder.name}`}

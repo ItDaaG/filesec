@@ -122,7 +122,10 @@ def delete_folder(
             all_files.extend(collect_files(child))
         return all_files
 
-    for file_obj in collect_files(folder):
+    files_in_tree = collect_files(folder)
+    total_size = sum(f.file_size or 0 for f in files_in_tree)
+
+    for file_obj in files_in_tree:
         try:
             path = Path(file_obj.file_path)
             if not path.is_absolute():
@@ -132,6 +135,9 @@ def delete_folder(
                 os.remove(path)
         except Exception:
             pass  # Don't block deletion if file already missing
+
+    # Decrement storage counter for all files removed
+    current_user.storage_used_bytes = max(0, (current_user.storage_used_bytes or 0) - total_size)
 
     # SQLAlchemy cascade handles child folders + files + permissions in DB
     crud.delete_folder(db, folder)

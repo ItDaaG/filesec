@@ -158,6 +158,9 @@ def delete_file(
     except Exception:
         pass  # Don't block DB deletion if file is already missing from disk
 
+    # Decrement storage counter
+    current_user.storage_used_bytes = max(0, (current_user.storage_used_bytes or 0) - (file_obj.file_size or 0))
+
     db.delete(file_obj)
     db.commit()
 
