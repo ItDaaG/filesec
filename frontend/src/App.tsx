@@ -5,22 +5,41 @@ import { LoginPage } from './pages/LoginPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { LandingPage } from './pages/LandingPage'
 import { FilesPage } from './pages/FilesPage'
+import { VerifyEmailPage } from './pages/VerifyEmailPage'
+import { TokenActionPage } from './pages/TokenActionPage'
 import { useAuth } from './context/AuthContext'
 
 function AppRoutes() {
-  const { isAuthenticated, isLoading } = useAuth()
+  const { isAuthenticated, isEmailVerified, isLoading } = useAuth()
 
   if (isLoading) return null
 
+  const requireVerified = (page: React.ReactNode) => {
+    if (!isAuthenticated) return <Navigate to="/login" replace />
+    if (!isEmailVerified) return <Navigate to="/verify-email" replace />
+    return page
+  }
+
   return (
     <Routes>
-      <Route path="/" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <LandingPage />} />
+      <Route
+        path="/"
+        element={
+          !isAuthenticated
+            ? <LandingPage />
+            : isEmailVerified
+              ? <Navigate to="/dashboard" replace />
+              : <Navigate to="/verify-email" replace />
+        }
+      />
       <Route path="/signup" element={!isAuthenticated ? <SignUpPage /> : <Navigate to="/dashboard" replace />} />
       <Route path="/login" element={!isAuthenticated ? <LoginPage /> : <Navigate to="/dashboard" replace />} />
-      <Route path="/dashboard" element={isAuthenticated ? <DashboardPage /> : <Navigate to="/login" replace />} />
-      <Route path="/files" element={isAuthenticated ? <FilesPage /> : <Navigate to="/login" replace />} />
-      <Route path="/files/folders/:folderId" element={isAuthenticated ? <FilesPage /> : <Navigate to="/login" replace />} />
-      <Route path="*" element={<Navigate to={isAuthenticated ? '/dashboard' : '/'} replace />} />
+      <Route path="/dashboard" element={requireVerified(<DashboardPage />)} />
+      <Route path="/files" element={requireVerified(<FilesPage />)} />
+      <Route path="/files/folders/:folderId" element={requireVerified(<FilesPage />)} />
+      <Route path="/verify-email" element={<VerifyEmailPage />} />
+      <Route path="/token" element={<TokenActionPage />} />
+      <Route path="*" element={<Navigate to={isAuthenticated && isEmailVerified ? '/dashboard' : '/'} replace />} />
     </Routes>
   )
 }

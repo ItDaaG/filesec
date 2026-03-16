@@ -6,6 +6,7 @@ import type { User } from '../types';
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
+  isEmailVerified: boolean;
   isLoading: boolean;
   setUser: (user: User | null) => void;
   login: (userData: User) => void;
@@ -50,6 +51,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       value={{
         user,
         isAuthenticated: !!user,
+        isEmailVerified: user?.is_email_verified ?? false,
         isLoading,
         setUser,
         login,
@@ -59,7 +61,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       {children}
     </AuthContext.Provider>
   );
-}
+}   
 
 export function useAuth() {
   const context = useContext(AuthContext);

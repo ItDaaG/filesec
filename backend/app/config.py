@@ -33,3 +33,13 @@ if not MASTER_KEY:
         "Generate a strong random string and set MASTER_KEY in your .env file."
     )
 
+# --- Email / SMTP configuration ---
+# Leave SMTP_HOST empty (or unset) to use console-logging dev mode.
+SMTP_HOST = os.getenv("SMTP_HOST", "")
+SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
+SMTP_USER = os.getenv("SMTP_USER", "")
+SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
+SMTP_FROM = os.getenv("SMTP_FROM", SMTP_USER)
+
+# Frontend base URL — used to build links inside emails
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
