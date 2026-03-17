@@ -111,3 +111,11 @@ export const getStorageStats = async (): Promise<StorageStats> => {
   const { data } = await api.get<StorageStats>('/users/me/storage-stats');
   return data;
 };
+
+// ---------------------------------------------------------------------------
+// Account deletion
+// ---------------------------------------------------------------------------
+
+export const deleteAccount = async (): Promise<void> => {
+  await api.delete('/users/me');
+};
