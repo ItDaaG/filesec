@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
 import { setAuthToken } from '@/api/client';
@@ -48,6 +49,13 @@ export function Navbar() {
                 {/* Add more logged-in items here in the future */}
                 {/* Example: <Button variant="outline" onClick={handleUpload}>Upload</Button> */}
                 
+                <button
+                  onClick={() => navigateTo('/settings')}
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  title="Settings"
+                >
+                  <Settings size={18} />
+                </button>
                 <span className="text-sm text-muted-foreground">
                   {user?.username}
                 </span>

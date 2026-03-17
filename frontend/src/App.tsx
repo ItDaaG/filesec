@@ -5,6 +5,7 @@ import { LoginPage } from './pages/LoginPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { LandingPage } from './pages/LandingPage'
 import { FilesPage } from './pages/FilesPage'
+import { SettingsPage } from './pages/SettingsPage'
 import { VerifyEmailPage } from './pages/VerifyEmailPage'
 import { TokenActionPage } from './pages/TokenActionPage'
 import { useAuth } from './context/AuthContext'
@@ -37,6 +38,7 @@ function AppRoutes() {
       <Route path="/dashboard" element={requireVerified(<DashboardPage />)} />
       <Route path="/files" element={requireVerified(<FilesPage />)} />
       <Route path="/files/folders/:folderId" element={requireVerified(<FilesPage />)} />
+      <Route path="/settings" element={requireVerified(<SettingsPage />)} />
       <Route path="/verify-email" element={<VerifyEmailPage />} />
       <Route path="/token" element={<TokenActionPage />} />
       <Route path="*" element={<Navigate to={isAuthenticated && isEmailVerified ? '/dashboard' : '/'} replace />} />
