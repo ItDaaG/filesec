@@ -5,7 +5,7 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from .. import schemas, crud, models
-from ..auth import get_current_user
+from ..auth import get_current_verified_user
 from ..database import get_db
 from ..models import User as UserModel
 from ..utils.storage import save_file
@@ -22,7 +22,7 @@ def upload_file(
     folder_id: Optional[int] = Form(None),
     share_with: List[str] = Form(default=[]),
     db: Session = Depends(get_db),
-    current_user: UserModel = Depends(get_current_user),
+    current_user: UserModel = Depends(get_current_verified_user),
 ):
     if not file.filename:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Filename is required")
@@ -61,7 +61,7 @@ def list_my_files(
     folder_id: Optional[int] = Query(None, description="Filter by folder. Omit for all files."),
     root_only: bool = Query(False, description="If true, return only files not in any folder."),
     db: Session = Depends(get_db),
-    current_user: UserModel = Depends(get_current_user),
+    current_user: UserModel = Depends(get_current_verified_user),
 ):
     query = db.query(models.File).filter(models.File.owner_id == current_user.id)
     if folder_id is not None:
@@ -74,7 +74,7 @@ def list_my_files(
 @router.get("/shared-with-me", response_model=list[schemas.FileOut])
 def list_shared_with_me(
     db: Session = Depends(get_db),
-    current_user: UserModel = Depends(get_current_user),
+    current_user: UserModel = Depends(get_current_verified_user),
 ):
     """List files explicitly shared with the current user via FilePermission."""
     files = (
@@ -90,7 +90,7 @@ def list_shared_with_me(
 def get_file(
     file_id: int,
     db: Session = Depends(get_db),
-    current_user: UserModel = Depends(get_current_user),
+    current_user: UserModel = Depends(get_current_verified_user),
 ):
     file_obj = db.query(crud.models.File).filter(
         crud.models.File.id == file_id, crud.models.File.owner_id == current_user.id
@@ -104,7 +104,7 @@ def get_file(
 def download_file(
     file_id: int,
     db: Session = Depends(get_db),
-    current_user: UserModel = Depends(get_current_user),
+    current_user: UserModel = Depends(get_current_verified_user),
 ):
     file_obj = db.query(crud.models.File).filter(
         crud.models.File.id == file_id, crud.models.File.owner_id == current_user.id
@@ -137,7 +137,7 @@ def download_file(
 def delete_file(
     file_id: int,
     db: Session = Depends(get_db),
-    current_user: UserModel = Depends(get_current_user),
+    current_user: UserModel = Depends(get_current_verified_user),
 ):
     file_obj = db.query(crud.models.File).filter(
         crud.models.File.id == file_id,
@@ -176,7 +176,7 @@ def share_file(
     file_id: int,
     body: ShareRequest,
     db: Session = Depends(get_db),
-    current_user: UserModel = Depends(get_current_user),
+    current_user: UserModel = Depends(get_current_verified_user),
 ):
     """Grant access to a file for a list of user emails. Owner only."""
     file_obj = db.query(models.File).filter(
@@ -200,7 +200,7 @@ def revoke_file_share(
     file_id: int,
     user_id: int,
     db: Session = Depends(get_db),
-    current_user: UserModel = Depends(get_current_user),
+    current_user: UserModel = Depends(get_current_verified_user),
 ):
     """Revoke a specific user's access to a file. Owner only."""
     file_obj = db.query(models.File).filter(

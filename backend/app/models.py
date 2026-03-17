@@ -13,12 +13,35 @@ class User(Base):
     password_hash = Column(String(255), nullable=False)
     account_tier = Column(String(20), default="standard", nullable=False)  # standard, pro, pro+
     storage_used_bytes = Column(Integer, default=0, nullable=False, server_default="0")
+    is_email_verified = Column(Boolean, default=False, nullable=False, server_default="false")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     # Relationships
     owned_files = relationship("File", back_populates="owner")
     owned_folders = relationship("Folder", back_populates="owner")
     shared_with_me = relationship("FilePermission", back_populates="user")
+    email_tokens = relationship("EmailToken", back_populates="user", cascade="all, delete-orphan")
+
+
+class EmailToken(Base):
+    """
+    Unified token table for email verification, password reset, and email
+    change flows.  Tokens are stored as SHA-256 hashes; the raw UUID is sent
+    only via email and never persisted in plain text.
+    """
+    __tablename__ = "email_tokens"
+
+    id = Column(Integer, primary_key=True, index=True)
+    token_hash = Column(String(64), unique=True, index=True, nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    # Values: "email_verification" | "password_reset" | "email_change"
+    token_type = Column(String(30), nullable=False)
+    # payload stores the pending new email for email_change; null otherwise
+    payload = Column(String(255), nullable=True)
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    used_at = Column(DateTime(timezone=True), nullable=True)
+
+    user = relationship("User", back_populates="email_tokens")
 
 
 class Folder(Base):

@@ -1,3 +1,6 @@
+import hashlib
+import uuid
+from datetime import datetime, timedelta, timezone
 from typing import Optional, List, Dict
 
 from sqlalchemy.orm import Session
@@ -5,6 +8,17 @@ from sqlalchemy.orm import Session
 from . import models
 from .schemas import UserCreate
 from .utils.security import get_password_hash
+
+# --- TOKEN TYPE CONSTANTS ---
+TOKEN_TYPE_EMAIL_VERIFICATION = "email_verification"
+TOKEN_TYPE_PASSWORD_RESET = "password_reset"
+TOKEN_TYPE_EMAIL_CHANGE = "email_change"
+
+TOKEN_LIFETIME: dict[str, timedelta] = {
+    TOKEN_TYPE_EMAIL_VERIFICATION: timedelta(hours=24),
+    TOKEN_TYPE_EMAIL_CHANGE: timedelta(hours=24),
+    TOKEN_TYPE_PASSWORD_RESET: timedelta(hours=1),
+}
 
 
 # --- USER HELPERS ---
@@ -204,3 +218,79 @@ def move_file_to_folder(
     db.commit()
     db.refresh(file)
     return file
+
+
+# ---------------------------------------------------------------------------
+# Email token helpers
+# ---------------------------------------------------------------------------
+
+def _hash_token(raw: str) -> str:
+    return hashlib.sha256(raw.encode()).hexdigest()
+
+
+def create_email_token(
+    db: Session,
+    *,
+    user_id: int,
+    token_type: str,
+    payload: Optional[str] = None,
+) -> str:
+    """
+    Generate a UUID4 token, persist its hash, and return the raw value.
+    The raw token is sent to the user via email and never stored in the DB.
+    """
+    raw = str(uuid.uuid4())
+    hashed = _hash_token(raw)
+    expires_at = datetime.now(timezone.utc) + TOKEN_LIFETIME[token_type]
+
+    db_token = models.EmailToken(
+        token_hash=hashed,
+        user_id=user_id,
+        token_type=token_type,
+        payload=payload,
+        expires_at=expires_at,
+    )
+    db.add(db_token)
+    db.commit()
+    return raw
+
+
+def get_valid_token(
+    db: Session,
+    raw_token: str,
+    expected_type: str,
+) -> Optional[models.EmailToken]:
+    """
+    Validate a raw token.  Returns the ORM row only when ALL conditions pass:
+      1. token_hash matches a row in email_tokens
+      2. token_type matches expected_type
+      3. used_at IS NULL  (not already consumed)
+      4. expires_at > now (not expired)
+    Returns None otherwise — callers must treat None as an invalid/expired token.
+    """
+    hashed = _hash_token(raw_token)
+    row = (
+        db.query(models.EmailToken)
+        .filter(
+            models.EmailToken.token_hash == hashed,
+            models.EmailToken.token_type == expected_type,
+        )
+        .first()
+    )
+    if row is None:
+        return None
+    if row.used_at is not None:
+        return None
+    # normalise timezone for comparison
+    expires = row.expires_at
+    if expires.tzinfo is None:
+        expires = expires.replace(tzinfo=timezone.utc)
+    if expires < datetime.now(timezone.utc):
+        return None
+    return row
+
+
+def consume_token(db: Session, token: models.EmailToken) -> None:
+    """Mark a token as used.  Row is kept for audit; used_at blocks reuse."""
+    token.used_at = datetime.now(timezone.utc)
+    db.commit()
