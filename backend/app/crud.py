@@ -2,6 +2,7 @@ import hashlib
 import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Optional, List, Dict
+from uuid import UUID
 
 from sqlalchemy.orm import Session
 
@@ -63,11 +64,13 @@ def create_file_for_user(
     filename: str,
     file_path: str,
     file_size: int,
+    mime_type: Optional[str] = None,
     is_public: bool = False,
-    folder_id: Optional[int] = None,
+    folder_id: Optional[UUID] = None,
 ) -> models.File:
     db_file = models.File(
         filename=filename,
+        mime_type=mime_type,
         file_path=file_path,
         file_size=file_size,
         is_public=is_public,
@@ -159,7 +162,7 @@ def create_folder(
     *,
     owner_id: int,
     name: str,
-    parent_id: Optional[int] = None,
+    parent_id: Optional[UUID] = None,
 ) -> models.Folder:
     db_folder = models.Folder(
         name=name,
@@ -172,14 +175,14 @@ def create_folder(
     return db_folder
 
 
-def get_folder_by_id(db: Session, folder_id: int) -> Optional[models.Folder]:
+def get_folder_by_id(db: Session, folder_id: UUID) -> Optional[models.Folder]:
     return db.query(models.Folder).filter(models.Folder.id == folder_id).first()
 
 
 def list_folders_for_user(
     db: Session,
     owner_id: int,
-    parent_id: Optional[int] = None,
+    parent_id: Optional[UUID] = None,
 ) -> List[models.Folder]:
     """
     List folders owned by a user.
@@ -211,7 +214,7 @@ def delete_folder(db: Session, folder: models.Folder) -> None:
 
 
 def move_file_to_folder(
-    db: Session, file: models.File, folder_id: Optional[int] = None
+    db: Session, file: models.File, folder_id: Optional[UUID] = None
 ) -> models.File:
     """Move a file into a folder (or back to root if folder_id is None)."""
     file.folder_id = folder_id

@@ -23,8 +23,8 @@ type ExplorerItem =
 interface FileExplorerProps {
   search: string;
   viewMode: "list" | "grid";
-  /** null = root; number = contents of that folder */
-  folderId: number | null;
+  /** null = root; string (UUID) = contents of that folder */
+  folderId: string | null;
   /** Called when the user clicks a folder to open it */
   onFolderOpen: (folder: Folder) => void;
 }

@@ -1,6 +1,7 @@
 from pydantic import BaseModel, EmailStr, ConfigDict, Field
 from datetime import datetime
 from typing import Optional, List
+from uuid import UUID
 
 # --- AUTH SCHEMAS ---
 
@@ -88,12 +89,19 @@ class FileUpdate(BaseModel):
     is_public: Optional[bool] = None
 
 class FileOut(FileBase):
-    id: int
+    id: UUID
     file_path: str
     file_size: int
+    mime_type: Optional[str] = None
     owner_id: int
-    folder_id: Optional[int] = None
+    folder_id: Optional[UUID] = None
     created_at: datetime
+    model_config = ConfigDict(from_attributes=True)
+
+class SharedUser(BaseModel):
+    id: int
+    email: str
+    username: str
     model_config = ConfigDict(from_attributes=True)
 
 # --- FOLDER SCHEMAS ---
@@ -102,16 +110,16 @@ class FolderBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
 
 class FolderCreate(FolderBase):
-    parent_id: Optional[int] = None
+    parent_id: Optional[UUID] = None
 
 class FolderUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=255)
-    parent_id: Optional[int] = None
+    parent_id: Optional[UUID] = None
 
 class FolderOut(FolderBase):
-    id: int
+    id: UUID
     owner_id: int
-    parent_id: Optional[int] = None
+    parent_id: Optional[UUID] = None
     created_at: datetime
     updated_at: datetime
     model_config = ConfigDict(from_attributes=True)

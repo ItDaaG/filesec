@@ -1,17 +1,17 @@
 import { api } from './client';
-import type { File as FileType, Folder } from '../types/file';
+import type { File as FileType, Folder, SharedUser, ShareResult } from '../types/file';
 
 export const uploadFile = async (
   file: File,
   isPublic: boolean = false,
   sharedWith: string[] = [],
-  folderId?: number | null,
+  folderId?: string | null,
 ): Promise<FileType> => {
   const formData = new FormData();
   formData.append('file', file);
   formData.append('is_public', String(isPublic));
   sharedWith.forEach((email) => formData.append('share_with', email));
-  if (folderId != null) formData.append('folder_id', String(folderId));
+  if (folderId != null) formData.append('folder_id', folderId);
 
   const { data } = await api.post<FileType>('/files/upload', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
@@ -20,16 +20,16 @@ export const uploadFile = async (
   return data;
 };
 
-export const getMyFiles = async (folderId?: number | null, rootOnly?: boolean): Promise<FileType[]> => {
+export const getMyFiles = async (folderId?: string | null, rootOnly?: boolean): Promise<FileType[]> => {
   const params: Record<string, string> = {};
-  if (folderId != null) params.folder_id = String(folderId);
+  if (folderId != null) params.folder_id = folderId;
   else if (rootOnly) params.root_only = 'true';
 
   const { data } = await api.get<FileType[]>('/files/', { params });
   return data;
 };
 
-export const deleteFile = async (fileId: number): Promise<void> => {
+export const deleteFile = async (fileId: string): Promise<void> => {
   await api.delete(`/files/${fileId}`);
 };
 
@@ -38,37 +38,68 @@ export const getSharedWithMeFiles = async (): Promise<FileType[]> => {
   return data;
 };
 
+export const getFileById = async (fileId: string): Promise<FileType> => {
+  const { data } = await api.get<FileType>(`/files/${fileId}`);
+  return data;
+};
+
+export const downloadFile = async (fileId: string): Promise<Blob> => {
+  const { data } = await api.get(`/files/${fileId}/download`, { responseType: 'blob' });
+  return data;
+};
+
+export const updateFile = async (
+  fileId: string,
+  data: { filename?: string; is_public?: boolean },
+): Promise<FileType> => {
+  const { data: result } = await api.patch<FileType>(`/files/${fileId}`, data);
+  return result;
+};
+
+export const getFilePermissions = async (fileId: string): Promise<SharedUser[]> => {
+  const { data } = await api.get<SharedUser[]>(`/files/${fileId}/permissions`);
+  return data;
+};
+
+export const shareFile = async (fileId: string, emails: string[]): Promise<ShareResult> => {
+  const { data } = await api.post<ShareResult>(`/files/${fileId}/share`, { emails });
+  return data;
+};
+
+export const revokeFileShare = async (fileId: string, userId: number): Promise<void> => {
+  await api.delete(`/files/${fileId}/share/${userId}`);
+};
+
 // --- FOLDER API ---
 
-export const getMyFolders = async (parentId?: number | null): Promise<Folder[]> => {
+export const getMyFolders = async (parentId?: string | null): Promise<Folder[]> => {
   const params: Record<string, string> = {};
-  if (parentId != null) params.parent_id = String(parentId);
+  if (parentId != null) params.parent_id = parentId;
 
   const { data } = await api.get<Folder[]>('/folders/', { params });
   return data;
 };
 
-export const createFolder = async (name: string, parentId?: number | null): Promise<Folder> => {
+export const createFolder = async (name: string, parentId?: string | null): Promise<Folder> => {
   const { data } = await api.post<Folder>('/folders/', { name, parent_id: parentId ?? null });
   return data;
 };
 
-export const deleteFolder = async (folderId: number): Promise<void> => {
+export const deleteFolder = async (folderId: string): Promise<void> => {
   await api.delete(`/folders/${folderId}`);
 };
 
-
-export const getFolderById = async (folderId: number): Promise<Folder> => {
+export const getFolderById = async (folderId: string): Promise<Folder> => {
   const { data } = await api.get<Folder>(`/folders/${folderId}`);
   return data;
 };
 
-// e.g. folderId=5 (child of 3) → [{ id: 3, name: "Work" }, { id: 5, name: "Reports" }]
+// e.g. folderId = "uuid-of-child" → [{ id: "uuid-of-parent", name: "Work" }, { id: "uuid-of-child", name: "Reports" }]
 export const buildBreadcrumbs = async (
-  folderId: number
-): Promise<{ id: number; name: string }[]> => {
-  const crumbs: { id: number; name: string }[] = [];
-  let currentId: number | null = folderId;
+  folderId: string
+): Promise<{ id: string; name: string }[]> => {
+  const crumbs: { id: string; name: string }[] = [];
+  let currentId: string | null = folderId;
 
   while (currentId !== null) {
     const folder = await getFolderById(currentId);

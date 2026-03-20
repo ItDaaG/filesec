@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { createFolder } from "@/api/fileService";
 
 interface CreateFolderButtonProps {
-  parentId: number | null;
+  parentId: string | null;
 }
 
 export const CreateFolderButton = ({ parentId }: CreateFolderButtonProps) => {

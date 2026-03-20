@@ -1,14 +1,14 @@
 import { ChevronRight, Home, Loader2 } from "lucide-react";
 
 export interface Breadcrumb {
-  id: number;
+  id: string;
   name: string;
 }
 
 interface FileBreadcrumbsProps {
   breadcrumbs: Breadcrumb[];
   /** Called with null to navigate to root, or with a folder id to jump to that level. */
-  onNavigate: (id: number | null) => void;
+  onNavigate: (id: string | null) => void;
   isLoading?: boolean;
 }
 

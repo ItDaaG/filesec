@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import type { File as FileType, Folder } from "@/types/file";
+import type { Folder } from "@/types/file";
 import { Folder as FolderIcon } from "lucide-react";
 import { DeleteButton } from "@/components/ui/DeleteButton";
 import { deleteFolder as deleteFolderApi } from "@/api/fileService";
