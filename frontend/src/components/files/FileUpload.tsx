@@ -19,9 +19,9 @@ interface FileUploadState {
 }
 
 interface FileUploadProps {
-  onUploadSuccess?: (file: { id: number; filename: string; file_size: number }) => void;
+  onUploadSuccess?: (file: { id: string; filename: string; file_size: number }) => void;
   onUploadError?: (error: string) => void;
-  folderId?: number | null;
+  folderId?: string | null;
   className?: string;
 }
 

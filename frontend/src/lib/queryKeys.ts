@@ -3,15 +3,18 @@ export const QUERY_KEYS = {
     /** Base key — used for prefix invalidation (invalidates all file queries) */
     all: () => ["files"] as const,
     /** Files scoped to a specific folder (or root when null) */
-    byFolder: (folderId: number | null) => ["files", folderId] as const,
+    byFolder: (folderId: string | null) => ["files", folderId] as const,
   },
   folders: {
     /** Base key — used for prefix invalidation (invalidates all folder queries) */
     all: () => ["folders"] as const,
     /** Folders scoped to a specific parent (or root when null) */
-    byParent: (parentId: number | null) => ["folders", parentId] as const,
+    byParent: (parentId: string | null) => ["folders", parentId] as const,
   },
   storageStats: () => ["storage-stats"] as const,
   sharedFiles: () => ["shared-files"] as const,
-  breadcrumbs: (folderId: number | null) => ["breadcrumbs", folderId] as const,
+  breadcrumbs: (folderId: string | null) => ["breadcrumbs", folderId] as const,
+  fileById: (fileId: string) => ["file", fileId] as const,
+  fileBlob: (fileId: string) => ["file-blob", fileId] as const,
+  filePermissions: (fileId: string) => ["file-permissions", fileId] as const,
 };

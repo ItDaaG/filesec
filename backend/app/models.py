@@ -1,4 +1,6 @@
+import uuid
 from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, DateTime, UniqueConstraint
+from sqlalchemy.dialects.postgresql import UUID as PgUUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from .database import Base
@@ -47,10 +49,10 @@ class EmailToken(Base):
 class Folder(Base):
     __tablename__ = "folders"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(PgUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(String(255), nullable=False)
     owner_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    parent_id = Column(Integer, ForeignKey("folders.id", ondelete="CASCADE"), nullable=True)
+    parent_id = Column(PgUUID(as_uuid=True), ForeignKey("folders.id", ondelete="CASCADE"), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
@@ -64,13 +66,14 @@ class Folder(Base):
 class File(Base):
     __tablename__ = "files"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(PgUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     filename = Column(String(255), nullable=False)
+    mime_type = Column(String(255), nullable=True)
     file_path = Column(String(500), nullable=False)  # Path to actual storage
     file_size = Column(Integer)  # In bytes
     is_public = Column(Boolean, default=False)  # "Openly" shared
     owner_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"))
-    folder_id = Column(Integer, ForeignKey("folders.id", ondelete="SET NULL"), nullable=True)
+    folder_id = Column(PgUUID(as_uuid=True), ForeignKey("folders.id", ondelete="SET NULL"), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     # Relationships
@@ -85,7 +88,7 @@ class FilePermission(Base):
     __table_args__ = (UniqueConstraint("file_id", "user_id", name="uq_file_user"),)
 
     id = Column(Integer, primary_key=True, index=True)
-    file_id = Column(Integer, ForeignKey("files.id", ondelete="CASCADE"))
+    file_id = Column(PgUUID(as_uuid=True), ForeignKey("files.id", ondelete="CASCADE"))
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"))
 
     file = relationship("File", back_populates="shared_with")

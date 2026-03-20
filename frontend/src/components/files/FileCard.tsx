@@ -1,34 +1,33 @@
 import { useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { File as FileType } from "@/types/file";
 import { File as FileIcon } from "lucide-react";
 import { DeleteButton } from "@/components/ui/DeleteButton";
 import { deleteFile as deleteFileApi } from "@/api/fileService";
-import { formatFileSize } from "@/lib/utils";
+import { formatDate, formatFileSize } from "@/lib/utils";
 import { QUERY_KEYS } from "@/lib/queryKeys";
 
 interface FileCardProps {
   file: FileType;
   variant?: "list" | "grid";
   onClick?: (file: FileType) => void;
+  allowDelete?: boolean;
 }
 
-const formatDate = (dateString: string): string => {
-  const diff = Date.now() - new Date(dateString).getTime();
-  const mins = Math.floor(diff / 60000);
-  const hours = Math.floor(diff / 3600000);
-  const days = Math.floor(diff / 86400000);
-  if (mins < 1) return "Just now";
-  if (mins < 60) return `${mins}m ago`;
-  if (hours < 24) return `${hours}h ago`;
-  if (days < 7) return `${days}d ago`;
-  return new Date(dateString).toLocaleDateString();
-};
-
-export const FileCard = ({ file, variant = "list", onClick }: FileCardProps) => {
+export const FileCard = ({ file, variant = "list", onClick, allowDelete = true }: FileCardProps) => {
   const [hovered, setHovered] = useState(false);
   const cancelRef = useRef<(() => void) | null>(null);
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
+
+  const handleClick = () => {
+    if (onClick) {
+      onClick(file);
+    } else {
+      navigate(`/files/${file.id}`);
+    }
+  };
 
   const deleteMutation = useMutation({
     mutationFn: () => deleteFileApi(file.id),
@@ -69,7 +68,7 @@ export const FileCard = ({ file, variant = "list", onClick }: FileCardProps) => 
       <div
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={handleMouseLeave}
-        onClick={() => onClick?.(file)}
+        onClick={handleClick}
         className={`
           relative flex flex-col items-center gap-2 p-4 rounded-lg cursor-pointer
           transition-colors duration-150 h-[140px] justify-center
@@ -77,14 +76,16 @@ export const FileCard = ({ file, variant = "list", onClick }: FileCardProps) => 
         `}
       >
         {/* Delete button — top-right corner */}
-        <div className="absolute top-2 right-2">
-          <DeleteButton
-            visible={hovered && !deleteMutation.isPending}
-            onConfirm={handleDelete}
-            onCancelRef={cancelRef}
-            ariaLabel={`Delete ${file.filename}`}
-          />
-        </div>
+        {allowDelete && (
+          <div className="absolute top-2 right-2">
+            <DeleteButton
+              visible={hovered && !deleteMutation.isPending}
+              onConfirm={handleDelete}
+              onCancelRef={cancelRef}
+              ariaLabel={`Delete ${file.filename}`}
+            />
+          </div>
+        )}
 
         <FileIcon className="h-8 w-8 text-muted-foreground" />
 
@@ -109,7 +110,7 @@ export const FileCard = ({ file, variant = "list", onClick }: FileCardProps) => 
     <div
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={handleMouseLeave}
-      onClick={() => onClick?.(file)}
+      onClick={handleClick}
       className={`
         flex items-center gap-3 p-3 rounded-lg cursor-pointer
         transition-colors duration-150
@@ -134,12 +135,14 @@ export const FileCard = ({ file, variant = "list", onClick }: FileCardProps) => 
           </span>
         )}
 
-        <DeleteButton
-          visible={hovered && !deleteMutation.isPending}
-          onConfirm={handleDelete}
-          onCancelRef={cancelRef}
-          ariaLabel={`Delete ${file.filename}`}
-        />
+        {allowDelete && (
+          <DeleteButton
+            visible={hovered && !deleteMutation.isPending}
+            onConfirm={handleDelete}
+            onCancelRef={cancelRef}
+            ariaLabel={`Delete ${file.filename}`}
+          />
+        )}
       </div>
     </div>
   );

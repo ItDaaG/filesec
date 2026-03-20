@@ -16,7 +16,7 @@ export const FilesPage = () => {
   const { folderId: folderIdParam } = useParams<{ folderId?: string }>();
   const navigate = useNavigate();
 
-  const folderId = folderIdParam ? parseInt(folderIdParam, 10) : null;
+  const folderId = folderIdParam ?? null;
 
   const [search, setSearch] = useState("");
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
@@ -36,7 +36,7 @@ export const FilesPage = () => {
     navigate(`/files/folders/${folder.id}`);
   };
 
-  const handleBreadcrumbNavigate = (id: number | null) => {
+  const handleBreadcrumbNavigate = (id: string | null) => {
     if (id === null) {
       navigate("/files");
     } else {
