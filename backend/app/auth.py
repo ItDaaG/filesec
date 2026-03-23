@@ -17,12 +17,12 @@ get_current_user          → validates JWT, returns User (verified or not)
 get_current_verified_user → like above but raises 403 if not verified
 """
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status, Header
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 
 from . import crud, models, schemas
-from .config import FRONTEND_URL
+from .config import FRONTEND_URL, AGENT_INTERNAL_KEY
 from .crud import (
     TOKEN_TYPE_EMAIL_CHANGE,
     TOKEN_TYPE_EMAIL_VERIFICATION,
@@ -103,6 +103,49 @@ async def get_current_verified_user(
         )
     return current_user
 
+async def get_agent_user(
+    db: Session = Depends(get_db),
+    agent_key: str | None = Header(default=None, alias="X-Agent-Key"),
+    agent_user_id: int | None = Header(default=None, alias="user_id"),
+) -> models.User:
+    """Authenticate agent-to-backend calls only (no JWT path)."""
+    if agent_key == AGENT_INTERNAL_KEY and agent_user_id is not None:
+        user = crud.get_user_by_id(db, agent_user_id)
+        if not user or not user.is_email_verified:
+            raise HTTPException(status_code=401, detail="Invalid agent user")
+        return user
+    raise HTTPException(status_code=401, detail="Unauthorized")
+
+async def get_verified_user_or_agent_user(
+    db: Session = Depends(get_db),
+    auth_header: str | None = Header(default=None, alias="Authorization"),
+    agent_key: str | None = Header(default=None, alias="X-Agent-Key"),
+    agent_user_id: int | None = Header(default=None, alias="user_id"),
+):
+    # Path A: normal user JWT
+    if auth_header and auth_header.startswith("Bearer "):
+        token = auth_header.removeprefix("Bearer ").strip()
+        payload = decode_access_token(token)
+        if payload is None:
+            raise HTTPException(status_code=401, detail="Could not validate credentials")
+        user_id = payload.get("sub")
+        if user_id is None:
+            raise HTTPException(status_code=401, detail="Could not validate credentials")
+        user = crud.get_user_by_id(db, int(user_id))
+        if not user:
+            raise HTTPException(status_code=401, detail="Could not validate credentials")
+        if not user.is_email_verified:
+            raise HTTPException(status_code=403, detail="Email not verified")
+        return user
+
+    # Path B: internal agent key + explicit user id
+    if agent_key == AGENT_INTERNAL_KEY and agent_user_id is not None:
+        user = crud.get_user_by_id(db, agent_user_id)
+        if not user or not user.is_email_verified:
+            raise HTTPException(status_code=401, detail="Invalid agent user")
+        return user
+
+    raise HTTPException(status_code=401, detail="Unauthorized")
 
 # ---------------------------------------------------------------------------
 # POST /auth/login
