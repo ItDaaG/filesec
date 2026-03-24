@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from .. import schemas, crud
-from ..auth import get_current_verified_user
+from ..auth import get_current_verified_user, get_verified_user_or_agent_user
 from ..database import get_db
 from ..models import User as UserModel
 
@@ -17,7 +17,7 @@ router = APIRouter(prefix="/folders", tags=["folders"])
 def create_folder(
     body: schemas.FolderCreate,
     db: Session = Depends(get_db),
-    current_user: UserModel = Depends(get_current_verified_user),
+    current_user: UserModel = Depends(get_verified_user_or_agent_user),
 ):
     """Create a new folder. Optionally nest it inside a parent folder."""
     # If parent_id provided, verify it exists and belongs to the user
@@ -42,7 +42,7 @@ def create_folder(
 def list_folders(
     parent_id: Optional[UUID] = Query(None, description="Get children of this folder. Omit for top-level."),
     db: Session = Depends(get_db),
-    current_user: UserModel = Depends(get_current_verified_user),
+    current_user: UserModel = Depends(get_verified_user_or_agent_user),
 ):
     """
     List folders for the current user.
@@ -69,7 +69,7 @@ def update_folder(
     folder_id: UUID,
     body: schemas.FolderUpdate,
     db: Session = Depends(get_db),
-    current_user: UserModel = Depends(get_current_verified_user),
+    current_user: UserModel = Depends(get_verified_user_or_agent_user),
 ):
     """Rename a folder or move it to a different parent."""
     folder = crud.get_folder_by_id(db, folder_id)

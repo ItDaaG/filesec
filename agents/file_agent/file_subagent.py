@@ -10,15 +10,24 @@ def file_by_name(file_name: str, tool_context: ToolContext):
     Do not share the ID of the file directly with the user.
     This tool is to be used when the user wants to do something with a file and 
     provides the name of the file. You will get the ID of the file using this tool.
-    Then you can use it in other rools 
+    Then you can use it in other tools. If you cant find the file, let the user know 
+    and then ask them what type of file it is. Then using this information you can try to call the tool again
+    but this time adding the file type extension to the file name. 
+    For example: 
+    User: I have a file called "coolcar"
+    You: I cant find the file called "coolcar". What type of file is it?
+    User: It's a png
+    You then do the call again with the file name "coolcar.png"
+    You: I have found the file.
     """
     r = requests.get(
         f"{API_BASE_URL}/agent/file_by_name",
         params={"file_name": file_name},
         headers={"X-Agent-Key": AGENT_INTERNAL_KEY, "user_id": str(tool_context.user_id)},
+        timeout=10,
     )
-    r.raise_for_status()
-    return r.json()
+    if r.status_code == 200: return r.json()
+    else: return {"status": "error", "message":r.json()["detail"]}
 
 def list_files(tool_context: ToolContext):
     """Fetch files from the backend API."""
@@ -27,8 +36,8 @@ def list_files(tool_context: ToolContext):
         headers={"X-Agent-Key": AGENT_INTERNAL_KEY, "user_id": str(tool_context.user_id)},
         timeout=10,
     )
-    r.raise_for_status()
-    return r.json()
+    if r.status_code == 200: return r.json()
+    else: return {"status": "error", "message": r.json()["detail"]}
 
 
 def delete_file(file_id: str, tool_context: ToolContext):
@@ -42,7 +51,6 @@ def delete_file(file_id: str, tool_context: ToolContext):
         headers={"X-Agent-Key": AGENT_INTERNAL_KEY, "user_id": str(tool_context.user_id)},
         timeout=10,
     )
-    r.raise_for_status()
     if r.status_code == 204: return {"status": "deleted"}
     else: return {"status": "error", "message": r.json()["detail"]}
 
@@ -59,7 +67,6 @@ def patch_file(file_id: str, file: dict, tool_context: ToolContext):
         params={"file_id": file_id},
         json=file,
     )
-    r.raise_for_status()
     if r.status_code == 200: return {"status": "patched"}
     else: return {"status": "error", "message": r.json()["detail"]}
 

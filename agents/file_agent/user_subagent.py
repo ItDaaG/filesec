@@ -12,8 +12,8 @@ def list_users(tool_context: ToolContext):
         headers={"X-Agent-Key": AGENT_INTERNAL_KEY, "user_id": str(tool_context.user_id)},
         timeout=10,
     )
-    r.raise_for_status()    
-    return r.json()
+    if r.status_code == 200: return r.json()
+    else: return {"status": "error", "message": r.json()["detail"]}
 
 def user_by_email(email: str, tool_context: ToolContext):
     """Get a user by their email. Requires API_ACCESS_TOKEN in .env (from /auth/login)."""
@@ -23,9 +23,9 @@ def user_by_email(email: str, tool_context: ToolContext):
         timeout=10,
         params={"email": email},
     )
-    r.raise_for_status()
-    return r.json()
-
+    if r.status_code == 200: return r.json()
+    else: return {"status": "error", "message": r.json()["detail"]}
+    
 def get_storage_usage(tool_context: ToolContext):
     """Get the storage usage from the backend API."""
     r = requests.get(
@@ -33,8 +33,8 @@ def get_storage_usage(tool_context: ToolContext):
         headers={"X-Agent-Key": AGENT_INTERNAL_KEY, "user_id": str(tool_context.user_id)},
         timeout=10,
     )
-    r.raise_for_status()
-    return r.json()
+    if r.status_code == 200: return r.json()
+    else: return {"status": "error", "message": r.json()["detail"]}
 
 user_subagent = Agent(
     model='gemini-2.5-flash',

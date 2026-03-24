@@ -92,6 +92,11 @@ def list_users(current_user: User = Depends(get_agent_user), db: Session = Depen
     _get_verified_user_or_404(db, current_user.id)
     return db.query(User).all()
 
+@router.get("/list_all_folders", response_model=list[FolderOut])
+def list_all_folders(db: Session = Depends(get_db), current_user: User = Depends(get_agent_user)):
+    _get_verified_user_or_404(db, current_user.id)
+    return db.query(Folder).filter(Folder.owner_id == current_user.id).all()
+
 @router.get("/user_by_email", response_model=UserOut)
 def user_by_email(email: str, current_user: User = Depends(get_agent_user), db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == email, User.id == current_user.id).first()
@@ -106,3 +111,11 @@ def file_by_name(file_name: str, db: Session = Depends(get_db), current_user: Us
     if not file:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found")
     return file
+
+@router.get("/folder_by_name", response_model=FolderOut)
+def folder_by_name(folder_name: str, db: Session = Depends(get_db), current_user: User = Depends(get_agent_user)):
+    _get_verified_user_or_404(db, current_user.id)
+    folder = db.query(Folder).filter(Folder.name == folder_name, Folder.owner_id == current_user.id).first()
+    if not folder:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Folder not found")
+    return folder
