@@ -105,6 +105,7 @@ export const FileExplorer = ({ search, viewMode, folderId, onFolderOpen }: FileE
               folder={item.data}
               variant={viewMode}
               onClick={onFolderOpen}
+              allowDelete={true}
             />
           ) : (
             <FileCard
