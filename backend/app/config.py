@@ -43,3 +43,6 @@ SMTP_FROM = os.getenv("SMTP_FROM", SMTP_USER)
 
 # Frontend base URL — used to build links inside emails
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
+
+# --- Agent configuration ---
+AGENT_INTERNAL_KEY = os.getenv("AGENT_INTERNAL_KEY", "123456789")

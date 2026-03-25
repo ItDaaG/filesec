@@ -3,6 +3,7 @@ import { StorageStatsCard } from "@/components/dashboard/StorageStatsCard";
 import { FileUpload } from "@/components/files/FileUpload";
 import { RecentFiles } from "@/components/files/RecentFiles";
 import { SharedWithMe } from "@/components/files/SharedWithMe";
+import { AgentChatWidget } from "@/components/chat/AgentChatWidget";
 
 export const DashboardPage = () => {
   const { user } = useAuth();
@@ -19,6 +20,8 @@ export const DashboardPage = () => {
         <RecentFiles />
         <SharedWithMe />
       </div>
+
+      <AgentChatWidget />
     </div>
   );
 };

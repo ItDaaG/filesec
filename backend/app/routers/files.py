@@ -9,7 +9,7 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from .. import schemas, crud, models
-from ..auth import get_current_verified_user
+from ..auth import get_current_verified_user, get_verified_user_or_agent_user
 from ..database import get_db
 from ..models import User as UserModel
 from ..utils.storage import save_file
@@ -154,7 +154,7 @@ def update_file(
     file_id: UUID,
     body: schemas.FileUpdate,
     db: Session = Depends(get_db),
-    current_user: UserModel = Depends(get_current_verified_user),
+    current_user: UserModel = Depends(get_verified_user_or_agent_user),
 ):
     """Update filename or visibility. Owner only."""
     file_obj = _get_owned_file_or_404(db, file_id, current_user.id)
@@ -223,7 +223,7 @@ def download_file(
 def delete_file(
     file_id: UUID,
     db: Session = Depends(get_db),
-    current_user: UserModel = Depends(get_current_verified_user),
+    current_user: UserModel = Depends(get_verified_user_or_agent_user),
 ):
     file_obj = _get_owned_file_or_404(db, file_id, current_user.id)
 
@@ -251,7 +251,7 @@ def share_file(
     file_id: UUID,
     body: ShareRequest,
     db: Session = Depends(get_db),
-    current_user: UserModel = Depends(get_current_verified_user),
+    current_user: UserModel = Depends(get_verified_user_or_agent_user),
 ):
     """Grant access to a file for a list of user emails. Owner only."""
     file_obj = _get_owned_file_or_404(db, file_id, current_user.id)
@@ -270,7 +270,7 @@ def revoke_file_share(
     file_id: UUID,
     user_id: int,
     db: Session = Depends(get_db),
-    current_user: UserModel = Depends(get_current_verified_user),
+    current_user: UserModel = Depends(get_verified_user_or_agent_user),
 ):
     """Revoke a specific user's access to a file. Owner only."""
     file_obj = _get_owned_file_or_404(db, file_id, current_user.id)
