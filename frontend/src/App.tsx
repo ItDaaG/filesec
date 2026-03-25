@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Navbar } from './components/layouts/Navbar'
+import { AppShell } from './components/layouts/AppShell'
 import { SignUpPage } from './pages/SignUpPage'
 import { LoginPage } from './pages/LoginPage'
 import { DashboardPage } from './pages/DashboardPage'
@@ -48,15 +49,38 @@ function AppRoutes() {
   )
 }
 
+/**
+ * Chooses the correct shell based on auth state:
+ *  - Authenticated + verified → AppShell (sidebar + topbar)
+ *  - Everything else          → plain topbar layout (landing, login, verify-email…)
+ */
+function AuthAwareLayout() {
+  const { isAuthenticated, isEmailVerified, isLoading } = useAuth()
+
+  if (isLoading) return null
+
+  if (isAuthenticated && isEmailVerified) {
+    return (
+      <AppShell>
+        <AppRoutes />
+      </AppShell>
+    )
+  }
+
+  return (
+    <div className="flex flex-col h-screen">
+      <Navbar />
+      <main className="flex-1 overflow-auto">
+        <AppRoutes />
+      </main>
+    </div>
+  )
+}
+
 function App() {
   return (
     <BrowserRouter>
-      <div className="flex flex-col h-screen">
-        <Navbar />
-        <main className="flex-1 overflow-auto">
-          <AppRoutes />
-        </main>
-      </div>
+      <AuthAwareLayout />
     </BrowserRouter>
   )
 }

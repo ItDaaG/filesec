@@ -10,9 +10,10 @@ interface FolderCardProps {
   folder: Folder;
   variant?: "list" | "grid";
   onClick: (folder: Folder) => void;
+  allowDelete?: boolean;
 }
 
-export const FolderCard = ({ folder, variant = "list", onClick }: FolderCardProps) => {
+export const FolderCard = ({ folder, variant = "list", onClick, allowDelete = true }: FolderCardProps) => {
   const [hovered, setHovered] = useState(false);
   const cancelRef = useRef<(() => void) | null>(null);
   const queryClient = useQueryClient();
@@ -65,14 +66,16 @@ export const FolderCard = ({ folder, variant = "list", onClick }: FolderCardProp
           ${hovered ? "bg-muted/80" : "bg-muted/30"}
         `}
       >
-        <div className="absolute top-2 right-2">
-          <DeleteButton
-            visible={hovered && !deleteMutation.isPending}
-            onConfirm={handleDelete}
-            onCancelRef={cancelRef}
-            ariaLabel={`Delete folder ${folder.name}`}
-          />
-        </div>
+        {allowDelete && (
+          <div className="absolute top-2 right-2">
+            <DeleteButton
+              visible={hovered && !deleteMutation.isPending}
+              onConfirm={handleDelete}
+              onCancelRef={cancelRef}
+              ariaLabel={`Delete folder ${folder.name}`}
+            />
+          </div>
+        )}
 
         <FolderIcon className="h-8 w-8 text-primary" />
 
@@ -111,12 +114,14 @@ export const FolderCard = ({ folder, variant = "list", onClick }: FolderCardProp
         </p>
       </div>
 
-      <DeleteButton
-        visible={hovered && !deleteMutation.isPending}
-        onConfirm={handleDelete}
-        onCancelRef={cancelRef}
-        ariaLabel={`Delete folder ${folder.name}`}
-      />
+      {allowDelete && (
+        <DeleteButton
+          visible={hovered && !deleteMutation.isPending}
+          onConfirm={handleDelete}
+          onCancelRef={cancelRef}
+          ariaLabel={`Delete folder ${folder.name}`}
+        />
+      )}
     </div>
   );
 };

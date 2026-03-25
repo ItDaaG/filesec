@@ -2,7 +2,15 @@ import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { File as FileType } from "@/types/file";
-import { File as FileIcon } from "lucide-react";
+import {
+  File as FileIcon,
+  Image as ImageIcon,
+  Video as VideoIcon,
+  Music as MusicIcon,
+  FileText as FileTextIcon,
+  Archive as ArchiveIcon,
+  Code2 as CodeIcon,
+} from "lucide-react";
 import { DeleteButton } from "@/components/ui/DeleteButton";
 import { deleteFile as deleteFileApi } from "@/api/fileService";
 import { formatDate, formatFileSize } from "@/lib/utils";
@@ -20,6 +28,43 @@ export const FileCard = ({ file, variant = "list", onClick, allowDelete = true }
   const cancelRef = useRef<(() => void) | null>(null);
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+
+  const Icon = (() => {
+    const mime = file.mime_type?.toLowerCase();
+    if (!mime) return FileIcon;
+
+    // Broad categories
+    if (mime.startsWith("image/")) return ImageIcon;
+    if (mime.startsWith("video/")) return VideoIcon;
+    if (mime.startsWith("audio/")) return MusicIcon;
+
+    // Common specifics
+    if (mime === "application/pdf") return FileTextIcon;
+    if (
+      mime.includes("zip") ||
+      mime.includes("rar") ||
+      mime.includes("7z") ||
+      mime.includes("tar") ||
+      mime.includes("gzip")
+    ) {
+      return ArchiveIcon;
+    }
+
+    // Text/code-ish types
+    if (
+      mime.startsWith("text/") ||
+      mime.includes("json") ||
+      mime.includes("xml") ||
+      mime.includes("yaml") ||
+      mime.includes("x-yaml") ||
+      mime.includes("javascript") ||
+      mime.includes("typescript")
+    ) {
+      return CodeIcon;
+    }
+
+    return FileIcon;
+  })();
 
   const handleClick = () => {
     if (onClick) {
@@ -87,7 +132,7 @@ export const FileCard = ({ file, variant = "list", onClick, allowDelete = true }
           </div>
         )}
 
-        <FileIcon className="h-8 w-8 text-muted-foreground" />
+        <Icon className="h-8 w-8 text-muted-foreground" />
 
         <div className="text-center min-w-0 w-full px-2">
           <p className="text-sm font-medium truncate">{file.filename}</p>
@@ -117,7 +162,7 @@ export const FileCard = ({ file, variant = "list", onClick, allowDelete = true }
         ${hovered ? "bg-muted/80" : "bg-muted/30"}
       `}
     >
-      <FileIcon className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+      <Icon className="h-5 w-5 text-primary flex-shrink-0" />
 
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium truncate">{file.filename}</p>
