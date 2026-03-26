@@ -29,16 +29,27 @@ def file_by_name(file_name: str, tool_context: ToolContext):
     if r.status_code == 200: return r.json()
     else: return {"status": "error", "message":r.json()["detail"]}
 
-def list_files(tool_context: ToolContext):
+def get_all_files(tool_context: ToolContext):
     """Fetch files from the backend API."""
     r = requests.get(
-        f"{API_BASE_URL}/agent/list-files",
+        f"{API_BASE_URL}/files/",
         headers={"X-Agent-Key": AGENT_INTERNAL_KEY, "user_id": str(tool_context.user_id)},
         timeout=10,
+        params={"root_only": True},
     )
     if r.status_code == 200: return r.json()
     else: return {"status": "error", "message": r.json()["detail"]}
 
+def get_files_in_folder(tool_context: ToolContext, folder_id: str = None):
+    """Fetch files from the backend API."""
+    r = requests.get(
+        f"{API_BASE_URL}/files/",
+        headers={"X-Agent-Key": AGENT_INTERNAL_KEY, "user_id": str(tool_context.user_id)},
+        timeout=10,
+        params={"folder_id": folder_id},
+    )
+    if r.status_code == 200: return r.json()
+    else: return {"status": "error", "message": r.json()["detail"]}
 
 def delete_file(file_id: str, tool_context: ToolContext):
     """Delete a file from the backend API. User may likely provide the name of the file rather than the id. 
@@ -77,5 +88,5 @@ file_subagent = Agent(
     description='The subagent responsible for file management.',
     instruction="""You are a helpful assistant for file management.
      You are responsible for creating, deleting, and searching for files.""",
-    tools=[file_by_name, list_files, delete_file, patch_file],
+    tools=[file_by_name, get_all_files, get_files_in_folder, delete_file, patch_file],
 )

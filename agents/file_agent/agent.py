@@ -2,6 +2,7 @@ from .file_subagent import file_subagent
 from .folder_subagent import folder_subagent
 from .user_subagent import user_subagent
 from .permissions_subagent import permissions_subagent
+from .summariser_subagent import summariser_subagent
 from google.adk.agents.llm_agent import Agent
 
 
@@ -27,5 +28,5 @@ root_agent = Agent(
     name='root_agent',
     description='A helpful assistant for file storage system.',
     instruction=SystemPrompt,
-    sub_agents=[file_subagent, folder_subagent, user_subagent, permissions_subagent],
+    sub_agents=[file_subagent, folder_subagent, user_subagent, permissions_subagent, summariser_subagent],
 )
