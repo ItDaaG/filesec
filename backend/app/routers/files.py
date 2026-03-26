@@ -101,7 +101,7 @@ def list_my_files(
     folder_id: Optional[UUID] = Query(None, description="Filter by folder. Omit for all files."),
     root_only: bool = Query(False, description="If true, return only files not in any folder."),
     db: Session = Depends(get_db),
-    current_user: UserModel = Depends(get_current_verified_user),
+    current_user: UserModel = Depends(get_verified_user_or_agent_user),
 ):
     query = db.query(models.File).filter(models.File.owner_id == current_user.id)
     if folder_id is not None:
@@ -191,7 +191,7 @@ def get_file_permissions(
 def download_file(
     file_id: UUID,
     db: Session = Depends(get_db),
-    current_user: UserModel = Depends(get_current_verified_user),
+    current_user: UserModel = Depends(get_verified_user_or_agent_user),
 ):
     file_obj = db.query(models.File).filter(models.File.id == file_id).first()
     if not file_obj:
