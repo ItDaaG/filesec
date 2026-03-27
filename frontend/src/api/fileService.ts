@@ -94,6 +94,35 @@ export const getFolderById = async (folderId: string): Promise<Folder> => {
   return data;
 };
 
+export const updateFolder = async (
+  folderId: string,
+  body: { name?: string; parent_id?: string | null },
+): Promise<Folder> => {
+  const { data } = await api.patch<Folder>(`/folders/${folderId}`, body);
+  return data;
+};
+
+// --- FOLDER SHARING API ---
+
+export const getSharedWithMeFolders = async (): Promise<Folder[]> => {
+  const { data } = await api.get<Folder[]>('/folders/shared-with-me');
+  return data;
+};
+
+export const getFolderPermissions = async (folderId: string): Promise<SharedUser[]> => {
+  const { data } = await api.get<SharedUser[]>(`/folders/${folderId}/permissions`);
+  return data;
+};
+
+export const shareFolder = async (folderId: string, emails: string[]): Promise<ShareResult> => {
+  const { data } = await api.post<ShareResult>(`/folders/${folderId}/share`, { emails });
+  return data;
+};
+
+export const revokeFolderShare = async (folderId: string, userId: number): Promise<void> => {
+  await api.delete(`/folders/${folderId}/share/${userId}`);
+};
+
 // e.g. folderId = "uuid-of-child" → [{ id: "uuid-of-parent", name: "Work" }, { id: "uuid-of-child", name: "Reports" }]
 export const buildBreadcrumbs = async (
   folderId: string

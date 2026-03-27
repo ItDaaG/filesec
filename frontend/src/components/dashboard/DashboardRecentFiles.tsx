@@ -70,6 +70,7 @@ export function DashboardRecentFiles() {
               file={file}
               variant="list"
               allowDelete={false}
+              allowManageActions={false}
             />
           ))}
         </div>

@@ -6,6 +6,7 @@ import { LoginPage } from './pages/LoginPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { LandingPage } from './pages/LandingPage'
 import { FilesPage } from './pages/FilesPage'
+import { SharedPage } from './pages/SharedPage'
 import { FileDetailPage } from './pages/FileDetailPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { VerifyEmailPage } from './pages/VerifyEmailPage'
@@ -38,6 +39,8 @@ function AppRoutes() {
       <Route path="/signup" element={!isAuthenticated ? <SignUpPage /> : <Navigate to="/dashboard" replace />} />
       <Route path="/login" element={!isAuthenticated ? <LoginPage /> : <Navigate to="/dashboard" replace />} />
       <Route path="/dashboard" element={requireVerified(<DashboardPage />)} />
+      <Route path="/shared/folders/:folderId" element={requireVerified(<SharedPage />)} />
+      <Route path="/shared" element={requireVerified(<SharedPage />)} />
       <Route path="/files" element={requireVerified(<FilesPage />)} />
       <Route path="/files/folders/:folderId" element={requireVerified(<FilesPage />)} />
       <Route path="/files/:fileId" element={requireVerified(<FileDetailPage />)} />

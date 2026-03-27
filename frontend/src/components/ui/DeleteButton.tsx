@@ -1,92 +1,114 @@
+import { useCallback, useEffect, useState } from "react";
 import { Trash2 } from "lucide-react";
-
-/**
- * DeleteButton — a reusable two-step delete confirmation button.
- *
- * Usage:
- *   <DeleteButton
- *     visible={isHovered}           // controls opacity (tie to hover state of parent)
- *     onConfirm={() => handleDelete(item)}
- *   />
- *
- * Behaviour:
- *   - First click:  shows "Delete?" label and highlights the icon
- *   - Second click: fires onConfirm()
- *   - Parent controls visibility via `visible` prop (opacity transition)
- *   - Pass `onCancelRef` if you need to reset confirmation from outside
- *     (e.g. on mouse-leave). Call onCancelRef.current?.() to reset.
- *
- * Example with mouse-leave cancel:
- *   const cancelRef = useRef<(() => void) | null>(null);
- *   <div onMouseLeave={() => cancelRef.current?.()}>
- *     <DeleteButton visible={hovered} onConfirm={handleDelete} onCancelRef={cancelRef} />
- *   </div>
- */
-
-import { useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogClose,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
 
 interface DeleteButtonProps {
-  /** Whether the button is visible (tied to parent hover state) */
-  visible: boolean;
-  /** Called when the user confirms deletion (second click) */
   onConfirm: () => void;
-  /** Optional ref so the parent can cancel confirmation (e.g. on mouse-leave) */
+  /** Row label in the menu; also used as dialog title unless `dialogTitle` is set */
+  label?: string;
+  dialogTitle?: string;
+  description?: string;
+  className?: string;
+  /** `menu` = dropdown row + dialog; `inline` = icon trigger + dialog */
+  variant?: "menu" | "inline";
+  /** inline: fade with parent hover */
+  visible?: boolean;
   onCancelRef?: React.MutableRefObject<(() => void) | null>;
   ariaLabel?: string;
 }
 
 export const DeleteButton = ({
-  visible,
   onConfirm,
+  label = "Delete",
+  dialogTitle,
+  description = "This action cannot be undone.",
+  className,
+  variant = "inline",
+  visible = true,
   onCancelRef,
   ariaLabel = "Delete",
 }: DeleteButtonProps) => {
-  const [confirming, setConfirming] = useState(false);
+  const [open, setOpen] = useState(false);
 
-  const cancel = () => setConfirming(false);
+  const cancel = useCallback(() => setOpen(false), []);
 
-  // Expose cancel to parent via ref
-  if (onCancelRef) onCancelRef.current = cancel;
+  useEffect(() => {
+    if (!onCancelRef) return;
+    onCancelRef.current = cancel;
+    return () => {
+      onCancelRef.current = null;
+    };
+  }, [onCancelRef, cancel]);
 
-  const handleClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (confirming) {
-      onConfirm();
-      setConfirming(false);
-    } else {
-      setConfirming(true);
-    }
-  };
+  const title = dialogTitle ?? label;
+
+  const footer = (
+    <DialogFooter>
+      <DialogClose asChild>
+        <Button type="button" variant="outline">
+          Cancel
+        </Button>
+      </DialogClose>
+      <DialogClose asChild>
+        <Button
+          type="button"
+          variant="destructive"
+          onClick={onConfirm}
+        >
+          {label}
+        </Button>
+      </DialogClose>
+    </DialogFooter>
+  );
 
   return (
-    <div className="flex items-center gap-1">
-      {/* "Delete?" label — slides in when confirming */}
-      <span
-        className={`
-          text-xs font-medium text-red-500 whitespace-nowrap
-          transition-all duration-200 overflow-hidden
-          ${confirming ? "max-w-[60px] opacity-100" : "max-w-0 opacity-0"}
-        `}
-      >
-        Delete?
-      </span>
+    <Dialog open={open} onOpenChange={setOpen}>
+      {variant === "menu" ? (
+        <DialogTrigger asChild>
+          <DropdownMenuItem
+            onSelect={(e) => e.preventDefault()}
+            className={cn("text-destructive focus:text-destructive", className)}
+          >
+            <Trash2 className="mr-2 h-4 w-4" />
+            {label}
+          </DropdownMenuItem>
+        </DialogTrigger>
+      ) : (
+        <DialogTrigger asChild>
+          <button
+            type="button"
+            aria-label={ariaLabel}
+            onClick={(e) => e.stopPropagation()}
+            className={cn(
+              "flex items-center justify-center rounded-full p-1.5 transition-all duration-200",
+              visible ? "opacity-100" : "opacity-0 pointer-events-none",
+              "text-red-500 hover:bg-red-50 dark:hover:bg-red-950",
+            )}
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+        </DialogTrigger>
+      )}
 
-      <button
-        type="button"
-        onClick={handleClick}
-        aria-label={confirming ? "Confirm delete" : ariaLabel}
-        className={`
-          flex items-center justify-center rounded-full p-1.5
-          transition-all duration-200
-          ${visible ? "opacity-100" : "opacity-0 pointer-events-none"}
-          ${confirming
-            ? "bg-red-100 dark:bg-red-950 text-red-600 scale-110"
-            : "text-red-500 hover:bg-red-50 dark:hover:bg-red-950"
-          }
-        `}
-      >
-        <Trash2 className="h-4 w-4" />
-      </button>
-    </div>
+      <DialogContent className="sm:max-w-md" showCloseButton>
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>{description}</DialogDescription>
+        </DialogHeader>
+        {footer}
+      </DialogContent>
+    </Dialog>
   );
 };

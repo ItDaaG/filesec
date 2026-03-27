@@ -22,6 +22,7 @@ class User(Base):
     owned_files = relationship("File", back_populates="owner")
     owned_folders = relationship("Folder", back_populates="owner")
     shared_with_me = relationship("FilePermission", back_populates="user")
+    shared_folders_with_me = relationship("FolderPermission", back_populates="user")
     email_tokens = relationship("EmailToken", back_populates="user", cascade="all, delete-orphan")
 
 
@@ -61,6 +62,7 @@ class Folder(Base):
     parent = relationship("Folder", back_populates="children", remote_side=[id])
     children = relationship("Folder", back_populates="parent", cascade="all, delete-orphan")
     files = relationship("File", back_populates="folder", cascade="all, delete-orphan")
+    shared_with = relationship("FolderPermission", back_populates="folder", cascade="all, delete-orphan")
 
 
 class File(Base):
@@ -93,3 +95,16 @@ class FilePermission(Base):
 
     file = relationship("File", back_populates="shared_with")
     user = relationship("User", back_populates="shared_with_me")
+
+
+class FolderPermission(Base):
+    """Handles sharing folders with specific users"""
+    __tablename__ = "folder_permissions"
+    __table_args__ = (UniqueConstraint("folder_id", "user_id", name="uq_folder_user"),)
+
+    id = Column(Integer, primary_key=True, index=True)
+    folder_id = Column(PgUUID(as_uuid=True), ForeignKey("folders.id", ondelete="CASCADE"))
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"))
+
+    folder = relationship("Folder", back_populates="shared_with")
+    user = relationship("User", back_populates="shared_folders_with_me")

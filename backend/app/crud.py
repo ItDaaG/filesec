@@ -213,6 +213,72 @@ def delete_folder(db: Session, folder: models.Folder) -> None:
     db.commit()
 
 
+# --- FOLDER PERMISSION HELPERS ---
+
+def share_folder_with_users(db: Session, folder: models.Folder, emails: List[str]) -> Dict[str, List[str]]:
+    """
+    Grant access to a folder for each email in the list.
+    - Skips emails that don't match any user.
+    - Skips the folder owner (they already have access).
+    - Idempotent: won't create duplicate FolderPermission rows.
+
+    Returns a structured result describing what happened for each email:
+    {
+        "owner": <bool>,
+        "shared": [...],
+        "already_shared": [...],
+        "not_found": [...]
+    }
+    """
+    result: Dict[str, List[str]] = {
+        "owner": False,
+        "shared": [],
+        "already_shared": [],
+        "not_found": [],
+    }
+
+    for email in emails:
+        normalized_email = email.strip().lower()
+        target = get_user_by_email(db, normalized_email)
+
+        if target is None:
+            result["not_found"].append(normalized_email)
+            continue
+
+        if target.id == folder.owner_id:
+            result["owner"] = True
+            continue
+
+        exists = db.query(models.FolderPermission).filter(
+            models.FolderPermission.folder_id == folder.id,
+            models.FolderPermission.user_id == target.id,
+        ).first()
+        if not exists:
+            db.add(models.FolderPermission(folder_id=folder.id, user_id=target.id))
+            result["shared"].append(normalized_email)
+        else:
+            result["already_shared"].append(normalized_email)
+
+    db.commit()
+    return result
+
+
+def revoke_folder_share(db: Session, folder: models.Folder, user_id: int) -> bool:
+    """
+    Revoke a specific user's access to a folder.
+    Returns True if a permission was removed, False if it didn't exist.
+    """
+    permission = db.query(models.FolderPermission).filter(
+        models.FolderPermission.folder_id == folder.id,
+        models.FolderPermission.user_id == user_id,
+    ).first()
+    if not permission:
+        return False
+    db.delete(permission)
+    db.commit()
+    return True
+
+
 def move_file_to_folder(
     db: Session, file: models.File, folder_id: Optional[UUID] = None
 ) -> models.File:

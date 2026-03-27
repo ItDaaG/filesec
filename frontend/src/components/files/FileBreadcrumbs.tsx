@@ -10,9 +10,19 @@ interface FileBreadcrumbsProps {
   /** Called with null to navigate to root, or with a folder id to jump to that level. */
   onNavigate: (id: string | null) => void;
   isLoading?: boolean;
+  /** Root crumb label (default: My Files) */
+  rootLabel?: string;
+  /** Accessible name for root navigation */
+  rootAriaLabel?: string;
 }
 
-export const FileBreadcrumbs = ({ breadcrumbs, onNavigate, isLoading = false }: FileBreadcrumbsProps) => {
+export const FileBreadcrumbs = ({
+  breadcrumbs,
+  onNavigate,
+  isLoading = false,
+  rootLabel = "My Files",
+  rootAriaLabel = "Go to My Files root",
+}: FileBreadcrumbsProps) => {
   // Don't render anything at root — heading alone is enough
   if (breadcrumbs.length === 0 && !isLoading) return null;
 
@@ -27,10 +37,10 @@ export const FileBreadcrumbs = ({ breadcrumbs, onNavigate, isLoading = false }: 
           type="button"
           onClick={() => onNavigate(null)}
           className="flex items-center gap-1 hover:text-foreground transition-colors"
-          aria-label="Go to My Files root"
+          aria-label={rootAriaLabel}
         >
           <Home className="h-3.5 w-3.5" />
-          <span>My Files</span>
+          <span>{rootLabel}</span>
         </button>
         <ChevronRight className="h-3.5 w-3.5 flex-shrink-0" />
         <Loader2 className="h-3.5 w-3.5 animate-spin opacity-50" />
@@ -48,10 +58,10 @@ export const FileBreadcrumbs = ({ breadcrumbs, onNavigate, isLoading = false }: 
         type="button"
         onClick={() => onNavigate(null)}
         className="flex items-center gap-1 hover:text-foreground transition-colors"
-        aria-label="Go to My Files root"
+        aria-label={rootAriaLabel}
       >
         <Home className="h-3.5 w-3.5" />
-        <span>My Files</span>
+        <span>{rootLabel}</span>
       </button>
 
       {breadcrumbs.map((crumb, idx) => {

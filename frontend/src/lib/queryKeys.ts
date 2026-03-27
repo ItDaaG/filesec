@@ -13,8 +13,10 @@ export const QUERY_KEYS = {
   },
   storageStats: () => ["storage-stats"] as const,
   sharedFiles: () => ["shared-files"] as const,
+  sharedFolders: () => ["shared-folders"] as const,
   breadcrumbs: (folderId: string | null) => ["breadcrumbs", folderId] as const,
   fileById: (fileId: string) => ["file", fileId] as const,
   fileBlob: (fileId: string) => ["file-blob", fileId] as const,
   filePermissions: (fileId: string) => ["file-permissions", fileId] as const,
+  folderPermissions: (folderId: string) => ["folder-permissions", folderId] as const,
 };

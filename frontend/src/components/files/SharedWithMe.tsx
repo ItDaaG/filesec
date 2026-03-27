@@ -67,6 +67,7 @@ export const SharedWithMe = ({ maxFiles = 3, onFileClick }: SharedWithMeProps) =
             file={file}
             variant="list"
             allowDelete={false}
+            allowManageActions={false}
             onClick={onFileClick}
           />
         ))}
