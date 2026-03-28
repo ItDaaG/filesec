@@ -4,7 +4,6 @@ import { DashboardSearchResults } from "@/components/dashboard/DashboardSearchRe
 import { StatsOverview } from "@/components/dashboard/StatsOverview";
 import { DashboardRecentFiles } from "@/components/dashboard/DashboardRecentFiles";
 import { FileUpload } from "@/components/files/FileUpload";
-import { AgentChatWidget } from "@/components/chat/AgentChatWidget";
 
 function getGreeting(): string {
   const h = new Date().getHours();
@@ -57,9 +56,6 @@ export const DashboardPage = () => {
         </div>
 
       </div>
-
-      {/* ── Cipher AI (floating) ──────────────────────── */}
-      <AgentChatWidget />
     </div>
   );
 };

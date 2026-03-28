@@ -36,7 +36,7 @@ def get_folders(tool_context: ToolContext, parent_id:str = None):
     else: return {"status": "error", "message": r.json()["detail"]}
 
 def list_all_folders(tool_context: ToolContext):
-    """List all folders for the current user. Use this internally when you cant find a folder by name. Also
+    """List all folders owned by the current user. Use this internally when you cant find a folder by name. Also
     use this when user asks for all of their folders."""
     r = requests.get(
         f"{API_BASE_URL}/agent/list_all_folders",

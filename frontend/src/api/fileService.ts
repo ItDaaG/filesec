@@ -141,9 +141,13 @@ export const buildBreadcrumbs = async (
   let currentId: string | null = folderId;
 
   while (currentId !== null) {
-    const folder = await getFolderById(currentId);
-    crumbs.unshift({ id: folder.id, name: folder.name });
-    currentId = folder.parent_id;
+    try {
+      const folder = await getFolderById(currentId);
+      crumbs.unshift({ id: folder.id, name: folder.name });
+      currentId = folder.parent_id;
+    } catch {
+      break;
+    }
   }
 
   return crumbs;

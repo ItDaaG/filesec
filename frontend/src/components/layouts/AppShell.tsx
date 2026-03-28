@@ -1,6 +1,7 @@
 import { Sidebar } from "./Sidebar";
 import { Navbar } from "./Navbar";
 import { SearchProvider } from "@/context/SearchContext";
+import { AgentChatWidget } from "@/components/chat/AgentChatWidget";
 
 /**
  * Authenticated app shell:
@@ -23,6 +24,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </main>
         </div>
       </div>
+      <AgentChatWidget />
     </SearchProvider>
   );
 }

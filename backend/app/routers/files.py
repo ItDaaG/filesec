@@ -116,7 +116,7 @@ def list_shared_with_me(
     folder_id: Optional[UUID] = Query(None, description="Filter by folder (same as list my files)."),
     root_only: bool = Query(False, description="If true, only files not in any folder."),
     db: Session = Depends(get_db),
-    current_user: UserModel = Depends(get_current_verified_user),
+    current_user: UserModel = Depends(get_verified_user_or_agent_user),
 ):
     """Explicit FilePermission plus files under shared folder trees; optional folder_id / root_only like GET /files/."""
     explicit = (
