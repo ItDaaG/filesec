@@ -13,6 +13,16 @@ def list_shared_with_me(tool_context: ToolContext):
     if r.status_code == 200: return r.json()
     else: return {"status": "error", "message": r.json()["detail"]}
 
+def list_shared_with_me_folders(tool_context: ToolContext):
+    """List all folders shared with the current user from the backend API."""
+    r = requests.get(
+        f"{API_BASE_URL}/folders/shared-with-me",
+        headers={"X-Agent-Key": AGENT_INTERNAL_KEY, "user_id": str(tool_context.user_id)},
+        timeout=10,
+    )
+    if r.status_code == 200: return r.json()
+    else: return {"status": "error", "message": r.json()["detail"]}
+
 def get_file_permissions(file_id: str, tool_context: ToolContext):
     """Get the permissions for a given file. User may likely provide the name of the file rather than the id. 
     If the user provides the name of the file, you should first search for the file by name and ask them to
@@ -61,5 +71,5 @@ permissions_subagent = Agent(
      You are responsible for managing the permissions for a given file.
      You are responsible for sharing a file with a list of users.
      You are responsible for revoking a user's access to a file.""",
-    tools=[list_shared_with_me, get_file_permissions, share_file_with_users, revoke_file_share],
+    tools=[list_shared_with_me, list_shared_with_me_folders, get_file_permissions, share_file_with_users, revoke_file_share],
 )

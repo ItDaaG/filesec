@@ -94,14 +94,16 @@ export function DashboardSearchResults({ query }: DashboardSearchResultsProps) {
                 folder={item.data}
                 variant="list"
                 onClick={() => navigate(`/files/folders/${item.data.id}`)}
-                allowDelete={false}
+                allowDelete={true}
+                allowManageActions={true}
               />
             ) : (
               <FileCard
                 key={`file-${item.data.id}`}
                 file={item.data}
                 variant="list"
-                allowDelete={false}
+                allowDelete={true}
+                allowManageActions={true}
               />
             )
           )}

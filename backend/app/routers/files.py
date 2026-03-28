@@ -1,7 +1,7 @@
 import os
 import mimetypes
 from pathlib import Path
-from typing import List, Optional
+from typing import Dict, List, Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, Form, Query, UploadFile, HTTPException, status
@@ -113,17 +113,32 @@ def list_my_files(
 
 @router.get("/shared-with-me", response_model=list[schemas.FileOut])
 def list_shared_with_me(
+    folder_id: Optional[UUID] = Query(None, description="Filter by folder (same as list my files)."),
+    root_only: bool = Query(False, description="If true, only files not in any folder."),
     db: Session = Depends(get_db),
-    current_user: UserModel = Depends(get_current_verified_user),
+    current_user: UserModel = Depends(get_verified_user_or_agent_user),
 ):
-    """List files explicitly shared with the current user via FilePermission."""
-    files = (
+    """Explicit FilePermission plus files under shared folder trees; optional folder_id / root_only like GET /files/."""
+    explicit = (
         db.query(models.File)
         .join(models.FilePermission, models.File.id == models.FilePermission.file_id)
         .filter(models.FilePermission.user_id == current_user.id)
         .all()
     )
-    return files
+    from_folders = crud.list_files_visible_via_folder_share(db, current_user.id)
+    merged: Dict[UUID, models.File] = {}
+    for f in explicit:
+        merged[f.id] = f
+    for f in from_folders:
+        merged.setdefault(f.id, f)
+    out = list(merged.values())
+    if folder_id is not None:
+        if not crud.user_can_read_folder(db, current_user.id, folder_id):
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Folder not found")
+        out = [f for f in out if f.folder_id == folder_id]
+    elif root_only:
+        out = [f for f in out if f.folder_id is None]
+    return out
 
 
 @router.get("/{file_id}", response_model=schemas.FileOut)
@@ -136,14 +151,7 @@ def get_file(
     if not file_obj:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found")
 
-    if file_obj.owner_id == current_user.id or file_obj.is_public:
-        return file_obj
-
-    has_permission = db.query(models.FilePermission).filter(
-        models.FilePermission.file_id == file_id,
-        models.FilePermission.user_id == current_user.id,
-    ).first()
-    if not has_permission:
+    if not crud.user_can_read_file(db, current_user.id, file_obj):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found")
 
     return file_obj
@@ -197,13 +205,8 @@ def download_file(
     if not file_obj:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found")
 
-    if not (file_obj.owner_id == current_user.id or file_obj.is_public):
-        has_permission = db.query(models.FilePermission).filter(
-            models.FilePermission.file_id == file_id,
-            models.FilePermission.user_id == current_user.id,
-        ).first()
-        if not has_permission:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found")
+    if not crud.user_can_read_file(db, current_user.id, file_obj):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found")
 
     path = _resolve_file_path(file_obj.file_path)
     try:

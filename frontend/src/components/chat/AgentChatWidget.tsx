@@ -35,16 +35,25 @@ export const AgentChatWidget = () => {
     setIsSending(true);
 
     try {
-      const data = await chatWithAgent({ message: trimmed, session_id: sessionId });
+      const data = await chatWithAgent({
+        message: trimmed,
+        session_id: sessionId,
+      });
       setSessionId(data.session_id);
       setMessages((prev) => [
         ...prev,
-        { role: "assistant", text: data.response || "No response from assistant." },
+        {
+          role: "assistant",
+          text: data.response || "Error connecting to the assistant.",
+        },
       ]);
     } catch {
       setMessages((prev) => [
         ...prev,
-        { role: "assistant", text: "Sorry, I couldn't reach the assistant right now." },
+        {
+          role: "assistant",
+          text: "Sorry, I could not reach the assistant right now.",
+        },
       ]);
     } finally {
       setIsSending(false);

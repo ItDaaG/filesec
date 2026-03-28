@@ -83,8 +83,8 @@ export function StatsOverview() {
   });
 
   const { data: shared = [], isLoading: sharedLoading } = useQuery({
-    queryKey: QUERY_KEYS.sharedFiles(),
-    queryFn: getSharedWithMeFiles,
+    queryKey: QUERY_KEYS.sharedFilesAll(),
+    queryFn: () => getSharedWithMeFiles(),
   });
 
   return (

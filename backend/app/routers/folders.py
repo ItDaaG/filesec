@@ -1,16 +1,31 @@
-from typing import Optional
+from typing import List, Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
-from .. import schemas, crud
+from .. import schemas, crud, models
 from ..auth import get_current_verified_user, get_verified_user_or_agent_user
 from ..database import get_db
 from ..models import User as UserModel
 
 
 router = APIRouter(prefix="/folders", tags=["folders"])
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+def _get_owned_folder_or_404(db: Session, folder_id: UUID, owner_id: int) -> models.Folder:
+    """Fetch a folder owned by owner_id, or raise 404. Use for owner-only mutation endpoints."""
+    folder = db.query(models.Folder).filter(
+        models.Folder.id == folder_id,
+        models.Folder.owner_id == owner_id,
+    ).first()
+    if not folder:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Folder not found")
+    return folder
 
 
 @router.post("/", response_model=schemas.FolderOut, status_code=status.HTTP_201_CREATED)
@@ -52,6 +67,21 @@ def list_folders(
     return crud.list_folders_for_user(db, owner_id=current_user.id, parent_id=parent_id)
 
 
+@router.get("/shared-with-me", response_model=list[schemas.FolderOut])
+def list_shared_folders(
+    parent_id: Optional[UUID] = Query(None, description="Children of this folder; omit for shared root entries."),
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_verified_user_or_agent_user),
+):
+    """
+    Folders in trees shared via FolderPermission — same navigation pattern as GET /folders/:
+    omit parent_id for top-level shared entries; pass parent_id for children inside a shared folder.
+    """
+    if parent_id is not None and not crud.user_can_read_folder(db, current_user.id, parent_id):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Folder not found")
+    return crud.list_shared_folders_at_parent(db, current_user.id, parent_id)
+
+
 @router.get("/{folder_id}", response_model=schemas.FolderOut)
 def get_folder(
     folder_id: UUID,
@@ -59,7 +89,7 @@ def get_folder(
     current_user: UserModel = Depends(get_current_verified_user),
 ):
     folder = crud.get_folder_by_id(db, folder_id)
-    if not folder or folder.owner_id != current_user.id:
+    if not folder or not crud.user_can_read_folder(db, current_user.id, folder_id):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Folder not found")
     return folder
 
@@ -103,7 +133,7 @@ def update_folder(
 def delete_folder(
     folder_id: UUID,
     db: Session = Depends(get_db),
-    current_user: UserModel = Depends(get_current_verified_user),
+    current_user: UserModel = Depends(get_verified_user_or_agent_user),
 ):
     """
     Recursively delete a folder and all its children/files.
@@ -143,3 +173,63 @@ def delete_folder(
 
     # SQLAlchemy cascade handles child folders + files + permissions in DB
     crud.delete_folder(db, folder)
+
+
+# --- FOLDER SHARING ENDPOINTS ---
+
+class ShareRequest(schemas.BaseModel):
+    emails: List[str]
+
+
+@router.get("/{folder_id}/permissions", response_model=list[schemas.SharedUser])
+def get_folder_permissions(
+    folder_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_verified_user_or_agent_user),
+):
+    """List users explicitly granted access to this folder. Owner only."""
+    _get_owned_folder_or_404(db, folder_id, current_user.id)
+
+    users = (
+        db.query(models.User)
+        .join(models.FolderPermission, models.FolderPermission.user_id == models.User.id)
+        .filter(models.FolderPermission.folder_id == folder_id)
+        .all()
+    )
+    return users
+
+
+@router.post("/{folder_id}/share", status_code=status.HTTP_200_OK)
+def share_folder(
+    folder_id: UUID,
+    body: ShareRequest,
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_verified_user_or_agent_user),
+):
+    """Grant access to a folder for a list of user emails. Owner only."""
+    folder = _get_owned_folder_or_404(db, folder_id, current_user.id)
+
+    result = crud.share_folder_with_users(db, folder, body.emails)
+    return {
+        "detail": "Shared successfully",
+        "shared": result["shared"],
+        "already_shared": result["already_shared"],
+        "not_found": result["not_found"],
+    }
+
+
+@router.delete("/{folder_id}/share/{user_id}", status_code=status.HTTP_200_OK)
+def revoke_folder_share(
+    folder_id: UUID,
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_verified_user_or_agent_user),
+):
+    """Revoke a specific user's access to a folder. Owner only."""
+    folder = _get_owned_folder_or_404(db, folder_id, current_user.id)
+
+    removed = crud.revoke_folder_share(db, folder, user_id)
+    if not removed:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Permission not found")
+
+    return {"detail": "Access revoked successfully"}

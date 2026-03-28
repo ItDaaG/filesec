@@ -33,8 +33,15 @@ export const deleteFile = async (fileId: string): Promise<void> => {
   await api.delete(`/files/${fileId}`);
 };
 
-export const getSharedWithMeFiles = async (): Promise<FileType[]> => {
-  const { data } = await api.get<FileType[]>('/files/shared-with-me');
+export const getSharedWithMeFiles = async (
+  folderId?: string | null,
+  rootOnly?: boolean,
+): Promise<FileType[]> => {
+  const params: Record<string, string> = {};
+  if (folderId != null) params.folder_id = folderId;
+  else if (rootOnly) params.root_only = 'true';
+
+  const { data } = await api.get<FileType[]>('/files/shared-with-me', { params });
   return data;
 };
 
@@ -94,6 +101,38 @@ export const getFolderById = async (folderId: string): Promise<Folder> => {
   return data;
 };
 
+export const updateFolder = async (
+  folderId: string,
+  body: { name?: string; parent_id?: string | null },
+): Promise<Folder> => {
+  const { data } = await api.patch<Folder>(`/folders/${folderId}`, body);
+  return data;
+};
+
+// --- FOLDER SHARING API ---
+
+export const getSharedWithMeFolders = async (parentId?: string | null): Promise<Folder[]> => {
+  const params: Record<string, string> = {};
+  if (parentId != null) params.parent_id = parentId;
+
+  const { data } = await api.get<Folder[]>('/folders/shared-with-me', { params });
+  return data;
+};
+
+export const getFolderPermissions = async (folderId: string): Promise<SharedUser[]> => {
+  const { data } = await api.get<SharedUser[]>(`/folders/${folderId}/permissions`);
+  return data;
+};
+
+export const shareFolder = async (folderId: string, emails: string[]): Promise<ShareResult> => {
+  const { data } = await api.post<ShareResult>(`/folders/${folderId}/share`, { emails });
+  return data;
+};
+
+export const revokeFolderShare = async (folderId: string, userId: number): Promise<void> => {
+  await api.delete(`/folders/${folderId}/share/${userId}`);
+};
+
 // e.g. folderId = "uuid-of-child" → [{ id: "uuid-of-parent", name: "Work" }, { id: "uuid-of-child", name: "Reports" }]
 export const buildBreadcrumbs = async (
   folderId: string
@@ -102,9 +141,13 @@ export const buildBreadcrumbs = async (
   let currentId: string | null = folderId;
 
   while (currentId !== null) {
-    const folder = await getFolderById(currentId);
-    crumbs.unshift({ id: folder.id, name: folder.name });
-    currentId = folder.parent_id;
+    try {
+      const folder = await getFolderById(currentId);
+      crumbs.unshift({ id: folder.id, name: folder.name });
+      currentId = folder.parent_id;
+    } catch {
+      break;
+    }
   }
 
   return crumbs;

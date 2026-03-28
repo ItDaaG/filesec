@@ -13,8 +13,8 @@ interface SharedWithMeProps {
 
 export const SharedWithMe = ({ maxFiles = 3, onFileClick }: SharedWithMeProps) => {
   const { data: allFiles = [], isLoading: loading } = useQuery({
-    queryKey: QUERY_KEYS.sharedFiles(),
-    queryFn: getSharedWithMeFiles,
+    queryKey: QUERY_KEYS.sharedFilesAll(),
+    queryFn: () => getSharedWithMeFiles(),
   });
 
   const files = useMemo(
@@ -67,6 +67,7 @@ export const SharedWithMe = ({ maxFiles = 3, onFileClick }: SharedWithMeProps) =
             file={file}
             variant="list"
             allowDelete={false}
+            allowManageActions={false}
             onClick={onFileClick}
           />
         ))}
