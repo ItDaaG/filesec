@@ -1,32 +1,13 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import type { Folder } from "@/types/file";
-import type { Breadcrumb } from "@/components/files/FileBreadcrumbs";
-import { getSharedWithMeFolders } from "@/api/fileService";
+import { buildBreadcrumbs } from "@/api/fileService";
 import { QUERY_KEYS } from "@/lib/queryKeys";
 import { FileExplorer } from "@/components/files/FileExplorer";
 import { FileViewToggle } from "@/components/files/FileViewToggle";
 import { FileBreadcrumbs } from "@/components/files/FileBreadcrumbs";
 import { useSearch } from "@/context/SearchContext";
-
-/** Breadcrumb chain for a shared folder using only folders returned by shared-with-me (client-side). */
-function buildSharedBreadcrumbs(folderId: string, allShared: Folder[]): Breadcrumb[] {
-  const byId = new Map(allShared.map((f) => [f.id, f]));
-  const crumbs: Breadcrumb[] = [];
-  const seen = new Set<string>();
-  let current: string | null = folderId;
-
-  while (current && !seen.has(current)) {
-    seen.add(current);
-    const f = byId.get(current);
-    if (!f) break;
-    crumbs.unshift({ id: f.id, name: f.name });
-    current = f.parent_id;
-  }
-
-  return crumbs;
-}
 
 export const SharedPage = () => {
   const { folderId: folderIdParam } = useParams<{ folderId?: string }>();
@@ -36,17 +17,11 @@ export const SharedPage = () => {
   const { search, setSearch } = useSearch();
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
 
-  const { data: allSharedFolders = [], isLoading: sharedFoldersLoading } = useQuery({
-    queryKey: QUERY_KEYS.sharedFolders(),
-    queryFn: getSharedWithMeFolders,
+  const { data: breadcrumbs = [], isLoading: breadcrumbsLoading } = useQuery({
+    queryKey: QUERY_KEYS.breadcrumbs(folderId),
+    queryFn: () => (folderId ? buildBreadcrumbs(folderId) : []),
+    enabled: folderId !== null,
   });
-
-  const breadcrumbs = useMemo(
-    () => (folderId ? buildSharedBreadcrumbs(folderId, allSharedFolders) : []),
-    [folderId, allSharedFolders],
-  );
-
-  const breadcrumbsLoading = folderId !== null && sharedFoldersLoading;
 
   useEffect(() => {
     setSearch("");

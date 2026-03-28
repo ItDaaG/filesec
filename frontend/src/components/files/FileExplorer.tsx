@@ -148,31 +148,27 @@ export const FileExplorer = ({
     enabled: scope === "owned",
   });
 
-  const { data: allSharedFiles = [], isLoading: sharedFilesLoading } = useQuery({
-    queryKey: QUERY_KEYS.sharedFiles(),
-    queryFn: getSharedWithMeFiles,
+  const { data: sharedFiles = [], isLoading: sharedFilesLoading } = useQuery({
+    queryKey: QUERY_KEYS.sharedFilesByFolder(folderId),
+    queryFn: () => getSharedWithMeFiles(folderId, folderId === null),
     enabled: scope === "shared",
   });
 
-  const { data: allSharedFolders = [], isLoading: sharedFoldersLoading } = useQuery({
-    queryKey: QUERY_KEYS.sharedFolders(),
-    queryFn: getSharedWithMeFolders,
+  const { data: sharedFolders = [], isLoading: sharedFoldersLoading } = useQuery({
+    queryKey: QUERY_KEYS.sharedFoldersByParent(folderId),
+    queryFn: () => getSharedWithMeFolders(folderId),
     enabled: scope === "shared",
   });
 
   const files = useMemo(() => {
     if (scope === "owned") return ownedFiles;
-    return allSharedFiles.filter((f) =>
-      folderId == null ? f.folder_id == null : f.folder_id === folderId,
-    );
-  }, [scope, folderId, ownedFiles, allSharedFiles]);
+    return sharedFiles;
+  }, [scope, ownedFiles, sharedFiles]);
 
   const folders = useMemo(() => {
     if (scope === "owned") return ownedFolders;
-    return allSharedFolders.filter((f) =>
-      folderId == null ? f.parent_id == null : f.parent_id === folderId,
-    );
-  }, [scope, folderId, ownedFolders, allSharedFolders]);
+    return sharedFolders;
+  }, [scope, ownedFolders, sharedFolders]);
 
   const loading =
     scope === "owned"

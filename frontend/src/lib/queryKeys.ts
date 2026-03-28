@@ -12,8 +12,12 @@ export const QUERY_KEYS = {
     byParent: (parentId: string | null) => ["folders", parentId] as const,
   },
   storageStats: () => ["storage-stats"] as const,
-  sharedFiles: () => ["shared-files"] as const,
-  sharedFolders: () => ["shared-folders"] as const,
+  /** Full shared file list (e.g. dashboard widget) */
+  sharedFilesAll: () => ["shared-files", "all"] as const,
+  /** Shared files scoped like GET /files/ — null = root (root_only), else folder contents */
+  sharedFilesByFolder: (folderId: string | null) => ["shared-files", folderId ?? "root"] as const,
+  /** Shared folders scoped like GET /folders/ — null = shared root row, else children of parent */
+  sharedFoldersByParent: (parentId: string | null) => ["shared-folders", parentId ?? "root"] as const,
   breadcrumbs: (folderId: string | null) => ["breadcrumbs", folderId] as const,
   fileById: (fileId: string) => ["file", fileId] as const,
   fileBlob: (fileId: string) => ["file-blob", fileId] as const,

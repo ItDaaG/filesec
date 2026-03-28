@@ -69,17 +69,17 @@ def list_folders(
 
 @router.get("/shared-with-me", response_model=list[schemas.FolderOut])
 def list_shared_folders(
+    parent_id: Optional[UUID] = Query(None, description="Children of this folder; omit for shared root entries."),
     db: Session = Depends(get_db),
     current_user: UserModel = Depends(get_verified_user_or_agent_user),
 ):
-    """List folders explicitly shared with the current user via FolderPermission."""
-    folders = (
-        db.query(models.Folder)
-        .join(models.FolderPermission, models.Folder.id == models.FolderPermission.folder_id)
-        .filter(models.FolderPermission.user_id == current_user.id)
-        .all()
-    )
-    return folders
+    """
+    Folders in trees shared via FolderPermission — same navigation pattern as GET /folders/:
+    omit parent_id for top-level shared entries; pass parent_id for children inside a shared folder.
+    """
+    if parent_id is not None and not crud.user_can_read_folder(db, current_user.id, parent_id):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Folder not found")
+    return crud.list_shared_folders_at_parent(db, current_user.id, parent_id)
 
 
 @router.get("/{folder_id}", response_model=schemas.FolderOut)
@@ -89,7 +89,7 @@ def get_folder(
     current_user: UserModel = Depends(get_current_verified_user),
 ):
     folder = crud.get_folder_by_id(db, folder_id)
-    if not folder or folder.owner_id != current_user.id:
+    if not folder or not crud.user_can_read_folder(db, current_user.id, folder_id):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Folder not found")
     return folder
 

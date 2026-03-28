@@ -33,8 +33,15 @@ export const deleteFile = async (fileId: string): Promise<void> => {
   await api.delete(`/files/${fileId}`);
 };
 
-export const getSharedWithMeFiles = async (): Promise<FileType[]> => {
-  const { data } = await api.get<FileType[]>('/files/shared-with-me');
+export const getSharedWithMeFiles = async (
+  folderId?: string | null,
+  rootOnly?: boolean,
+): Promise<FileType[]> => {
+  const params: Record<string, string> = {};
+  if (folderId != null) params.folder_id = folderId;
+  else if (rootOnly) params.root_only = 'true';
+
+  const { data } = await api.get<FileType[]>('/files/shared-with-me', { params });
   return data;
 };
 
@@ -104,8 +111,11 @@ export const updateFolder = async (
 
 // --- FOLDER SHARING API ---
 
-export const getSharedWithMeFolders = async (): Promise<Folder[]> => {
-  const { data } = await api.get<Folder[]>('/folders/shared-with-me');
+export const getSharedWithMeFolders = async (parentId?: string | null): Promise<Folder[]> => {
+  const params: Record<string, string> = {};
+  if (parentId != null) params.parent_id = parentId;
+
+  const { data } = await api.get<Folder[]>('/folders/shared-with-me', { params });
   return data;
 };
 
