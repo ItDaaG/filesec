@@ -7,6 +7,7 @@ import { useFileDragSurface } from "@/hooks/useFileDragSurface";
 import type { File as FileType, Folder } from "@/types/file";
 import { FileCard } from "@/components/files/FileCard";
 import { FolderCard } from "@/components/files/FolderCard";
+import type { ExplorerFilterMode, ExplorerSortMode } from "@/components/files/FileExplorerToolbar";
 import {
   Pagination,
   PaginationContent,
@@ -22,11 +23,86 @@ type ExplorerItem =
   | { kind: "folder"; data: Folder }
   | { kind: "file"; data: FileType };
 
+function itemName(item: ExplorerItem): string {
+  return item.kind === "folder" ? item.data.name : item.data.filename;
+}
+
+function itemDateMs(item: ExplorerItem): number {
+  if (item.kind === "folder") return new Date(item.data.updated_at).getTime();
+  return new Date(item.data.created_at).getTime();
+}
+
+function itemSizeBytes(item: ExplorerItem): number {
+  return item.kind === "file" ? item.data.file_size ?? 0 : 0;
+}
+
+function compareExplorerItems(a: ExplorerItem, b: ExplorerItem, sort: ExplorerSortMode): number {
+  switch (sort) {
+    case "name_asc":
+      return itemName(a).localeCompare(itemName(b), undefined, { sensitivity: "base" });
+    case "name_desc":
+      return itemName(b).localeCompare(itemName(a), undefined, { sensitivity: "base" });
+    case "date_desc":
+      return itemDateMs(b) - itemDateMs(a);
+    case "date_asc":
+      return itemDateMs(a) - itemDateMs(b);
+    case "size_desc":
+      return itemSizeBytes(b) - itemSizeBytes(a);
+    case "size_asc":
+      return itemSizeBytes(a) - itemSizeBytes(b);
+    default:
+      return 0;
+  }
+}
+
+function sortBlock(items: ExplorerItem[], sort: ExplorerSortMode): ExplorerItem[] {
+  return [...items].sort((a, b) => compareExplorerItems(a, b, sort));
+}
+
+function fileMatchesMimeFilter(file: FileType, filter: ExplorerFilterMode): boolean {
+  const m = (file.mime_type ?? "").toLowerCase();
+  switch (filter) {
+    case "pdf":
+      return m.includes("pdf");
+    case "images":
+      return m.startsWith("image/");
+    case "video":
+      return m.startsWith("video/");
+    case "audio":
+      return m.startsWith("audio/");
+    default:
+      return true;
+  }
+}
+
+function applyExplorerFilterAndSort(
+  items: ExplorerItem[],
+  filter: ExplorerFilterMode,
+  sort: ExplorerSortMode,
+): ExplorerItem[] {
+  const folders = items.filter((i) => i.kind === "folder");
+  const files = items.filter((i) => i.kind === "file");
+
+  if (filter === "all") {
+    return [...sortBlock(folders, sort), ...sortBlock(files, sort)];
+  }
+  if (filter === "folders") {
+    return sortBlock(folders, sort);
+  }
+  if (filter === "files") {
+    return sortBlock(files, sort);
+  }
+  const matched = files.filter((i) => fileMatchesMimeFilter(i.data, filter));
+  return sortBlock(matched, sort);
+}
+
 export type FileExplorerScope = "owned" | "shared";
 
 interface FileExplorerProps {
   search: string;
   viewMode: "list" | "grid";
+  sortMode: ExplorerSortMode;
+  filterMode: ExplorerFilterMode;
   /** null = root; string (UUID) = contents of that folder */
   folderId: string | null;
   /** Called when the user clicks a folder to open it */
@@ -133,6 +209,8 @@ function FileExplorerListBody({
 export const FileExplorer = ({
   search,
   viewMode,
+  sortMode,
+  filterMode,
   folderId,
   onFolderOpen,
   scope = "owned",
@@ -201,14 +279,19 @@ export const FileExplorer = ({
     [filteredFolders, filteredFiles],
   );
 
+  const displayItems = useMemo(
+    () => applyExplorerFilterAndSort(allItems, filterMode, sortMode),
+    [allItems, filterMode, sortMode],
+  );
+
   const allowDelete = allowItemActions;
   const allowManage = allowItemActions;
 
-  const listEpoch = `${folderId ?? "root"}|${search}|${scope}`;
+  const listEpoch = `${folderId ?? "root"}|${search}|${scope}|${sortMode}|${filterMode}`;
 
-  let content: ReactNode;
+  let body: ReactNode;
   if (loading) {
-    content = <div className="text-center text-muted-foreground py-12">Loading…</div>;
+    body = <div className="text-center text-muted-foreground py-12">Loading…</div>;
   } else if (allItems.length === 0) {
     const empty =
       scope === "shared"
@@ -218,12 +301,18 @@ export const FileExplorer = ({
         : search
           ? `No results for "${search}"`
           : "No files or folders yet.";
-    content = <div className="text-center text-muted-foreground py-12">{empty}</div>;
+    body = <div className="text-center text-muted-foreground py-12">{empty}</div>;
+  } else if (displayItems.length === 0) {
+    body = (
+      <div className="text-center text-muted-foreground py-12">
+        Nothing matches the current filter. Try &quot;Filter: All&quot;.
+      </div>
+    );
   } else {
-    content = (
+    body = (
       <FileExplorerListBody
         key={listEpoch}
-        allItems={allItems}
+        allItems={displayItems}
         viewMode={viewMode}
         onFolderOpen={onFolderOpen}
         allowDelete={allowDelete}
@@ -232,8 +321,10 @@ export const FileExplorer = ({
     );
   }
 
+  const results = <div className="min-h-0 flex-1 overflow-auto">{body}</div>;
+
   if (scope !== "owned") {
-    return <div className="flex h-full min-h-0 flex-col">{content}</div>;
+    return <div className="flex h-full min-h-0 flex-col">{results}</div>;
   }
 
   const onOwnedDrop = (e: DragEvent) => {
@@ -269,7 +360,7 @@ export const FileExplorer = ({
       {...dragSurfaceHandlers}
       onDrop={onOwnedDrop}
     >
-      {content}
+      {results}
       {dropError ? (
         <p className="mt-2 text-center text-sm text-destructive" role="alert">
           {dropError}

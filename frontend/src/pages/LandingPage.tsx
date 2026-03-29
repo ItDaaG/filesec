@@ -18,10 +18,7 @@ import {
   Video,
   Sparkles,
   Lock,
-  Users,
   Zap,
-  Menu,
-  X,
 } from "lucide-react";
 
 /* ------------------------------------------------------------------ */

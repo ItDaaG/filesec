@@ -1,15 +1,10 @@
 import { useEffect, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, Globe, Lock, Pencil, Users, X } from "lucide-react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Check, Globe, Lock, Pencil, X } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import {
-  getFilePermissions,
-  revokeFileShare,
-  shareFile,
-  updateFile,
-} from "@/api/fileService";
+import { getFilePermissions, revokeFileShare, shareFile, updateFile } from "@/api/fileService";
+import { ShareAccessPanel } from "@/components/files/ShareAccessPanel";
 import { QUERY_KEYS } from "@/lib/queryKeys";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { File as FileType } from "@/types/file";
 import { formatDate, formatFileSize } from "@/lib/utils";
@@ -39,6 +34,7 @@ interface FileInfoSidebarProps {
 export const FileInfoSidebar = ({ file, onClose }: FileInfoSidebarProps) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const fileId = file.id;
   const isOwner = user?.id === file.owner_id;
 
   // --- Filename editing ---
@@ -50,23 +46,12 @@ export const FileInfoSidebar = ({ file, onClose }: FileInfoSidebarProps) => {
     if (!editingName) setNameValue(file.filename);
   }, [file.filename, editingName]);
 
-  // --- Share input ---
-  const [shareEmail, setShareEmail] = useState("");
-  const [shareError, setShareError] = useState<string | null>(null);
-
-  // --- Queries ---
-  const { data: sharedUsers = [] } = useQuery({
-    queryKey: QUERY_KEYS.filePermissions(file.id),
-    queryFn: () => getFilePermissions(file.id),
-    enabled: isOwner,
-  });
-
   // --- Mutations ---
   const updateMutation = useMutation({
     mutationFn: (data: { filename?: string; is_public?: boolean }) =>
-      updateFile(file.id, data),
+      updateFile(fileId, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.fileById(file.id) });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.fileById(fileId) });
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.files.all() });
       setEditingName(false);
     },
@@ -75,35 +60,6 @@ export const FileInfoSidebar = ({ file, onClose }: FileInfoSidebarProps) => {
       setNameValue(file.filename);
       setEditingName(false);
     },
-  });
-
-  const revokeMutation = useMutation({
-    mutationFn: (userId: number) => revokeFileShare(file.id, userId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.filePermissions(file.id),
-      });
-    },
-  });
-
-  const shareMutation = useMutation({
-    mutationFn: (email: string) => shareFile(file.id, [email]),
-    onSuccess: (result) => {
-      if (result.not_found?.length) {
-        setShareError(`User not found: ${result.not_found.join(", ")}`);
-        return;
-      }
-      if (result.already_shared?.length) {
-        setShareError(`Already shared with: ${result.already_shared.join(", ")}`);
-        return;
-      }
-      setShareEmail("");
-      setShareError(null);
-      queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.filePermissions(file.id),
-      });
-    },
-    onError: () => setShareError("Failed to share. Please try again."),
   });
 
   // --- Handlers ---
@@ -119,13 +75,6 @@ export const FileInfoSidebar = ({ file, onClose }: FileInfoSidebarProps) => {
 
   const handleTogglePublic = () => {
     updateMutation.mutate({ is_public: !file.is_public });
-  };
-
-  const handleAddShare = () => {
-    const email = shareEmail.trim();
-    if (!email) return;
-    setShareError(null);
-    shareMutation.mutate(email);
   };
 
   const ext = file.filename.split(".").pop()?.toLowerCase() ?? "";
@@ -267,76 +216,20 @@ export const FileInfoSidebar = ({ file, onClose }: FileInfoSidebarProps) => {
             )}
           </div>
 
-          {/* Shared users (owner only) */}
-          {isOwner && (
-            <div className="space-y-2">
-              <div className="flex items-center gap-1.5">
-                <Users size={12} className="text-muted-foreground" />
-                <span className="text-xs text-muted-foreground font-medium">
-                  Shared with ({sharedUsers.length})
-                </span>
-              </div>
-
-              {sharedUsers.length === 0 ? (
-                <p className="text-xs text-muted-foreground pl-4">
-                  Not shared with anyone
-                </p>
-              ) : (
-                <ul className="space-y-1">
-                  {sharedUsers.map((u) => (
-                    <li
-                      key={u.id}
-                      className="flex items-center justify-between gap-2 px-3 py-2 rounded-md bg-muted/30"
-                    >
-                      <div className="min-w-0">
-                        <p className="text-xs font-medium truncate">{u.username}</p>
-                        <p className="text-xs text-muted-foreground truncate">{u.email}</p>
-                      </div>
-                      <button
-                        onClick={() => revokeMutation.mutate(u.id)}
-                        disabled={revokeMutation.isPending}
-                        className="text-muted-foreground hover:text-destructive transition-colors disabled:opacity-40 shrink-0"
-                        aria-label={`Remove ${u.email}`}
-                      >
-                        <X size={13} />
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-
-              {/* Add user by email */}
-              <div className="space-y-1.5 pt-1">
-                <div className="flex gap-2">
-                  <Input
-                    type="email"
-                    placeholder="Share by email…"
-                    value={shareEmail}
-                    onChange={(e) => {
-                      setShareEmail(e.target.value);
-                      setShareError(null);
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") handleAddShare();
-                    }}
-                    className="h-8 text-xs flex-1"
-                    disabled={shareMutation.isPending}
-                  />
-                  <Button
-                    size="sm"
-                    onClick={handleAddShare}
-                    disabled={shareMutation.isPending || !shareEmail.trim()}
-                    className="h-8 text-xs px-3"
-                  >
-                    Add
-                  </Button>
-                </div>
-                {shareError && (
-                  <p className="text-xs text-destructive">{shareError}</p>
-                )}
-              </div>
-            </div>
-          )}
+          {isOwner ? (
+            <ShareAccessPanel
+              key={fileId}
+              permissions={{
+                queryKey: QUERY_KEYS.filePermissions(fileId),
+                queryFn: () => getFilePermissions(fileId),
+              }}
+              share={(email) => shareFile(fileId, [email])}
+              revoke={(userId) => revokeFileShare(fileId, userId)}
+              onMutationSettled={() => {
+                queryClient.invalidateQueries({ queryKey: QUERY_KEYS.files.all() });
+              }}
+            />
+          ) : null}
 
           {/* Non-owner: just show access level */}
           {!isOwner && (
