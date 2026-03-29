@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { QUERY_KEYS } from "@/lib/queryKeys";
 import { uploadFile } from "@/api/fileService";
+import { useFileDragSurface } from "@/hooks/useFileDragSurface";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -28,11 +29,11 @@ interface FileUploadProps {
 
 export const FileUpload = ({ onUploadSuccess, onUploadError, folderId, className }: FileUploadProps) => {
   const queryClient = useQueryClient();
+  const { isDragOver, dragSurfaceHandlers, resetDragHighlight } = useFileDragSurface();
   const [uploads, setUploads] = useState<FileUploadState[]>([]);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const updateUpload = (idx: number, patch: Partial<FileUploadState>) => {
@@ -66,11 +67,9 @@ export const FileUpload = ({ onUploadSuccess, onUploadError, folderId, className
 
   const openFilePicker = () => fileInputRef.current?.click();
 
-  const handleDragOver = (e: React.DragEvent) => { e.preventDefault(); setIsDragging(true); };
-  const handleDragLeave = (e: React.DragEvent) => { e.preventDefault(); setIsDragging(false); };
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
-    setIsDragging(false);
+    resetDragHighlight();
     mergeFilesIntoQueue(e.dataTransfer.files);
   };
 
@@ -159,15 +158,14 @@ export const FileUpload = ({ onUploadSuccess, onUploadError, folderId, className
               ? "File drop zone. Press Enter or Space to select files."
               : "File drop zone. Click empty area or press Enter or Space to add more files."
           }
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
+          {...dragSurfaceHandlers}
           onDrop={handleDrop}
           onKeyDown={handleKeyDown}
           onClick={() => !uploading && openFilePicker()}
           className={cn(
             "relative h-[160px] border-2 border-dashed rounded-lg flex flex-col overflow-hidden transition-colors duration-150",
             !uploading && "cursor-pointer",
-            isDragging ? "border-primary bg-primary/5" : "border-muted-foreground/25 hover:border-primary/50",
+            isDragOver ? "border-primary bg-primary/5" : "border-muted-foreground/25 hover:border-primary/50",
             uploading && "opacity-50 pointer-events-none",
           )}
         >

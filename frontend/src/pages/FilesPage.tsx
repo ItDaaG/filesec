@@ -45,7 +45,7 @@ export const FilesPage = () => {
   };
 
   return (
-    <div className="p-8 space-y-4">
+    <div className="flex min-h-full flex-col p-8 space-y-4">
       <div className="flex items-center justify-between gap-2">
         <h1 className="text-3xl font-bold">My Files</h1>
         <div className="flex items-center gap-2">
@@ -57,8 +57,8 @@ export const FilesPage = () => {
       {/* Breadcrumbs — only visible when inside a folder */}
       <FileBreadcrumbs breadcrumbs={breadcrumbs} onNavigate={handleBreadcrumbNavigate} isLoading={breadcrumbsLoading} />
       {/* Main layout: explorer left, upload sidebar right */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-        <div>
+      <div className="grid min-h-0 flex-1 grid-cols-1 gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+        <div className="min-h-0 h-full">
           <FileExplorer
             search={search}
             viewMode={viewMode}

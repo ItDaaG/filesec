@@ -1,7 +1,9 @@
-import { useState, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { getMyFiles, getMyFolders, getSharedWithMeFiles, getSharedWithMeFolders } from "@/api/fileService";
+import { useState, useMemo, type DragEvent, type ReactNode } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { getMyFiles, getMyFolders, getSharedWithMeFiles, getSharedWithMeFolders, uploadFile } from "@/api/fileService";
 import { QUERY_KEYS } from "@/lib/queryKeys";
+import { cn } from "@/lib/utils";
+import { useFileDragSurface } from "@/hooks/useFileDragSurface";
 import type { File as FileType, Folder } from "@/types/file";
 import { FileCard } from "@/components/files/FileCard";
 import { FolderCard } from "@/components/files/FolderCard";
@@ -136,6 +138,10 @@ export const FileExplorer = ({
   scope = "owned",
   allowItemActions = true,
 }: FileExplorerProps) => {
+  const queryClient = useQueryClient();
+  const { isDragOver, dragSurfaceHandlers, resetDragHighlight } = useFileDragSurface();
+  const [dropError, setDropError] = useState<string | null>(null);
+
   const { data: ownedFiles = [], isLoading: ownedFilesLoading } = useQuery({
     queryKey: QUERY_KEYS.files.byFolder(folderId),
     queryFn: () => getMyFiles(folderId, folderId === null),
@@ -200,11 +206,10 @@ export const FileExplorer = ({
 
   const listEpoch = `${folderId ?? "root"}|${search}|${scope}`;
 
+  let content: ReactNode;
   if (loading) {
-    return <div className="text-center text-muted-foreground py-12">Loading…</div>;
-  }
-
-  if (allItems.length === 0) {
+    content = <div className="text-center text-muted-foreground py-12">Loading…</div>;
+  } else if (allItems.length === 0) {
     const empty =
       scope === "shared"
         ? search
@@ -213,17 +218,63 @@ export const FileExplorer = ({
         : search
           ? `No results for "${search}"`
           : "No files or folders yet.";
-    return <div className="text-center text-muted-foreground py-12">{empty}</div>;
+    content = <div className="text-center text-muted-foreground py-12">{empty}</div>;
+  } else {
+    content = (
+      <FileExplorerListBody
+        key={listEpoch}
+        allItems={allItems}
+        viewMode={viewMode}
+        onFolderOpen={onFolderOpen}
+        allowDelete={allowDelete}
+        allowManage={allowManage}
+      />
+    );
   }
 
+  if (scope !== "owned") {
+    return <div className="flex h-full min-h-0 flex-col">{content}</div>;
+  }
+
+  const onOwnedDrop = (e: DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    resetDragHighlight();
+
+    const list = e.dataTransfer.files;
+    if (!list || list.length === 0) return;
+
+    setDropError(null);
+    void (async () => {
+      try {
+        for (const file of Array.from(list)) {
+          await uploadFile(file, false, [], folderId);
+        }
+        queryClient.invalidateQueries({ queryKey: QUERY_KEYS.files.all() });
+        queryClient.invalidateQueries({ queryKey: QUERY_KEYS.storageStats() });
+      } catch (err: unknown) {
+        const ax = err as { response?: { data?: { detail?: string } }; message?: string };
+        const msg = ax.response?.data?.detail || ax.message || "Upload failed";
+        setDropError(typeof msg === "string" ? msg : "Upload failed");
+      }
+    })();
+  };
+
   return (
-    <FileExplorerListBody
-      key={listEpoch}
-      allItems={allItems}
-      viewMode={viewMode}
-      onFolderOpen={onFolderOpen}
-      allowDelete={allowDelete}
-      allowManage={allowManage}
-    />
+    <div
+      className={cn(
+        "flex h-full min-h-0 flex-col rounded-lg transition-colors",
+        isDragOver && "bg-primary/5 ring-2 ring-primary/40 ring-inset",
+      )}
+      {...dragSurfaceHandlers}
+      onDrop={onOwnedDrop}
+    >
+      {content}
+      {dropError ? (
+        <p className="mt-2 text-center text-sm text-destructive" role="alert">
+          {dropError}
+        </p>
+      ) : null}
+    </div>
   );
 };
