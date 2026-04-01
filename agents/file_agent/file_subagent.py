@@ -66,7 +66,8 @@ def delete_file(file_id: str, tool_context: ToolContext):
     else: return {"status": "error", "message": r.json()["detail"]}
 
 def patch_file(file_id: str, file: dict, tool_context: ToolContext):
-    """Patch a file in the backend API. You can patch the filename or the visibility of the file.
+    """Patch a file in the backend API. You can patch the filename, visibility, or parent folder of the file
+    (useful when organising files into folders with the organiser subagent).
     If the user provides the name of the file, you should first search for the file by name and ask them to
     confirm the file they want to patch. If they confirm, then patch it. If they do not confirm, then aid them
     in finding the file by name using list_files tool.

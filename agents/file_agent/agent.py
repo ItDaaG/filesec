@@ -3,6 +3,7 @@ from .folder_subagent import folder_subagent
 from .user_subagent import user_subagent
 from .permissions_subagent import permissions_subagent
 from .summariser_subagent import summariser_subagent
+from .organiser_subagent import organiser_subagent
 from google.adk.agents.llm_agent import Agent
 
 
@@ -21,6 +22,7 @@ Guardrails:
 Success Criteria:
 - The user should feel like the asssitant can actually do tasks for them rathe than just providing information.
 - The user should feel like the asssitant is a helpful assistant and not a robot.
+- When a subagent returns a folder reorganisation plan with formatted_plan_text, pass that text to the user in full (plain multi-line), not only as JSON.
 """
 
 root_agent = Agent(
@@ -28,5 +30,12 @@ root_agent = Agent(
     name='root_agent',
     description='A helpful assistant for file storage system.',
     instruction=SystemPrompt,
-    sub_agents=[file_subagent, folder_subagent, user_subagent, permissions_subagent, summariser_subagent],
+    sub_agents=[
+        file_subagent,
+        folder_subagent,
+        user_subagent,
+        permissions_subagent,
+        summariser_subagent,
+        organiser_subagent,
+    ],
 )

@@ -164,13 +164,18 @@ def update_file(
     db: Session = Depends(get_db),
     current_user: UserModel = Depends(get_verified_user_or_agent_user),
 ):
-    """Update filename or visibility. Owner only."""
+    """Update filename, visibility, or parent folder. Owner only."""
     file_obj = _get_owned_file_or_404(db, file_id, current_user.id)
 
     if body.filename is not None:
         file_obj.filename = body.filename.strip()
     if body.is_public is not None:
         file_obj.is_public = body.is_public
+    if body.folder_id is not None: 
+        folder = crud.get_folder_by_id(db, body.folder_id)
+        if not folder or folder.owner_id != current_user.id:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Folder not found")
+        file_obj.folder_id = folder.id
 
     db.commit()
     db.refresh(file_obj)
