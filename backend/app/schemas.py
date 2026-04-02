@@ -87,7 +87,7 @@ class FileCreate(FileBase):
 class FileUpdate(BaseModel):
     filename: Optional[str] = None
     is_public: Optional[bool] = None
-    folder_id: Optional[UUID] = None  # None = move to library root (no folder)
+    folder_id: Optional[UUID] = None 
 
 class FileOut(FileBase):
     id: UUID

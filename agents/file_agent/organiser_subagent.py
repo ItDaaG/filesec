@@ -1,74 +1,11 @@
 import json
-from collections import defaultdict
-from uuid import UUID
 
 import requests
-from .config import API_BASE_URL, AGENT_INTERNAL_KEY
 from google.adk.agents.llm_agent import Agent
 from google.adk.tools import ToolContext
 
-
-def _agent_headers(tc: ToolContext) -> dict[str, str]:
-    return {"X-Agent-Key": AGENT_INTERNAL_KEY, "user_id": str(tc.user_id)}
-
-
-def _list_folders(parent_id: str, tool_context: ToolContext) -> dict | list:
-    """Same API as folder_subagent get_folders: children of parent_id."""
-    r = requests.get(
-        f"{API_BASE_URL}/folders/",
-        headers=_agent_headers(tool_context),
-        params={"parent_id": parent_id},
-        timeout=60,
-    )
-    if r.status_code == 200:
-        return r.json()
-    return {"status": "error", "message": r.json().get("detail", r.text)}
-
-
-def _find_or_create_folder(name: str, parent_id: str, tool_context: ToolContext) -> str | dict:
-    """Return new folder id, or error dict. Mirrors folder_subagent create_folder + listing."""
-    listed = _list_folders(parent_id, tool_context)
-    if isinstance(listed, dict) and listed.get("status") == "error":
-        return listed
-    name_clean = name.strip()
-    for f in listed:
-        if f.get("name") == name_clean:
-            return str(f["id"])
-    r = requests.post(
-        f"{API_BASE_URL}/folders/",
-        headers=_agent_headers(tool_context),
-        json={"name": name_clean, "parent_id": parent_id},
-        timeout=60,
-    )
-    if r.status_code == 201:
-        return str(r.json()["id"])
-    return {"status": "error", "message": r.json().get("detail", r.text)}
-
-
-def _ensure_folder_chain(scope_folder_id: str, segments: list[str], tool_context: ToolContext) -> str | dict:
-    """Create/find nested folders under scope_folder_id. segments are path parts excluding filename."""
-    current = scope_folder_id.strip()
-    for seg in segments:
-        if not seg.strip():
-            continue
-        nxt = _find_or_create_folder(seg, current, tool_context)
-        if isinstance(nxt, dict):
-            return nxt
-        current = nxt
-    return current
-
-
-def _parse_destination_path(path: str) -> tuple[list[str], str | None]:
-    """Split /A/B/file.ext into (['A','B'], 'file.ext'). Single segment => ([], 'file.ext') = file in scope root."""
-    raw = (path or "").strip().replace("\\", "/")
-    if raw.startswith("/"):
-        raw = raw[1:]
-    parts = [p for p in raw.split("/") if p]
-    if not parts:
-        return [], None
-    if len(parts) == 1:
-        return [], parts[0]
-    return parts[:-1], parts[-1]
+from .config import API_BASE_URL
+from .shared_tools import agent_headers, create_folder, get_folders, patch_file, folder_by_name
 
 
 def get_folder_tree(folder_id: str, tool_context: ToolContext, depth_limit: str = ""):
@@ -91,7 +28,7 @@ def get_folder_tree(folder_id: str, tool_context: ToolContext, depth_limit: str 
         params["depth_limit"] = int(depth_limit.strip())
     r = requests.get(
         f"{API_BASE_URL}/agent/organiser/folder_tree",
-        headers=_agent_headers(tool_context),
+        headers=agent_headers(tool_context),
         params=params,
         timeout=30,
     )
@@ -114,7 +51,7 @@ def propose_file_clusters(clusters_json: str, tool_context: ToolContext):
 
     Returns: `{ "status": "ok", "clusters": [...] }` or `{ "status": "error", "message": "..." }`.
     """
-    _ = tool_context  # injected by ADK; no backend call for this step
+    _ = tool_context 
     try:
         data = json.loads(clusters_json)
     except json.JSONDecodeError as e:
@@ -202,19 +139,27 @@ organiser_subagent = Agent(
     model="gemini-2.5-flash",
     name="organiser_subagent",
     description="Fetches real folder trees from the API, then plans clustering and layout via structured JSON tools.",
-    instruction="""Workflow: (1) get_folder_tree. (2) propose_file_clusters (JSON array). (3)
-propose_category_labels (JSON object). (4) propose_folder_reorganisation with file_to_destination and
-optionally tree_preview if you want a custom outline.
+    instruction="""Workflow: (1) get the folders id by calling folder_by_name. then pass this into get_folder_tree.
+                   (2) Propose file clusters and pass JSON through propose_file_clusters.
+                   (3) Propose category labels and pass JSON through propose_category_labels.
+                   (4) propose_folder_reorganisation with file_to_destination and optionally tree_preview.
+                       file_to_destination and optionally tree_preview.
 
 When you finish step 4, the tool returns the plan. In your reply to the user, you MUST
-provide the plan in a readable clean intuitive format. Do not give the raw JSON to the user ever.
-The JSON is for internal use only.
-If the user asks for the plan "as a string", provide the plan in a readable clean intuitive format.
-Do not give the raw JSON to the user ever. The JSON is for internal use only.""",
+present the plan in a readable, intuitive format. Never show raw plan JSON to the user.
+
+(5) You have all the tools you need to apply the plan. No need to transfer to other subagents or root_agent. 
+Only if the user clearly asks to apply the plan: use get_folders to see existing children under the scope folder,
+create_folder for any missing path segments, then patch_file with {"folder_id": "<uuid>"} to move each file.
+Use the file ids and folder ids from get_folder_tree / get_folders; do not invent ids.""",
     tools=[
         get_folder_tree,
         propose_file_clusters,
         propose_category_labels,
         propose_folder_reorganisation,
+        get_folders,
+        create_folder,
+        patch_file,
+        folder_by_name,
     ],
 )
