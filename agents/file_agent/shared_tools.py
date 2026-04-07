@@ -19,7 +19,7 @@ def _error_message(r: requests.Response) -> str:
         return r.text or r.reason
 
 
-# --- Folders ---
+# --- Folder Tools ---
 def folder_by_name(folder_name: str, tool_context: ToolContext):
     """Get a folder by its name.
     Requires user_id in the tool context.
@@ -103,7 +103,7 @@ def delete_folder(folder_id: str, tool_context: ToolContext):
     return {"status": "error", "message": _error_message(r)}
 
 
-def update_folder(folder_id: str, name: str, tool_context: ToolContext):
+def patch_folder(folder_id: str, name: str, tool_context: ToolContext):
     """Update the name of a folder. User may likely provide the name of the folder rather than the id.
     If the user provides the name of the folder, you should first search for the folder by name and ask them to
     confirm the folder they want to update. If they confirm, then update it. If they do not confirm, then aid them
@@ -120,8 +120,7 @@ def update_folder(folder_id: str, name: str, tool_context: ToolContext):
     return {"status": "error", "message": _error_message(r)}
 
 
-# --- Files (same behaviour as previous file_subagent implementations) ---
-
+# --- File Tools ---
 
 def file_by_name(file_name: str, tool_context: ToolContext):
     """Get a file by its name.
@@ -163,35 +162,6 @@ def list_all_files(tool_context: ToolContext):
     return {"status": "error", "message": _error_message(r)}
 
 
-def list_files_in_folder(tool_context: ToolContext, folder_id: str | None = None):
-    """Fetch files from the backend API."""
-    r = requests.get(
-        f"{API_BASE_URL}/files/",
-        headers=agent_headers(tool_context),
-        timeout=10,
-        params={"folder_id": folder_id},
-    )
-    if r.status_code == 200:
-        return r.json()
-    return {"status": "error", "message": _error_message(r)}
-
-
-def delete_file(file_id: str, tool_context: ToolContext):
-    """Delete a file from the backend API. User may likely provide the name of the file rather than the id.
-    If the user provides the name of the file, you should first search for the file by name and ask them to
-    confirm the file they want to delete. If they confirm, then delete it. If they do not confirm, then aid them
-    in finding the file by name using list_all_files tool.
-    """
-    r = requests.delete(
-        f"{API_BASE_URL}/files/{file_id}",
-        headers=agent_headers(tool_context),
-        timeout=10,
-    )
-    if r.status_code == 204:
-        return {"status": "deleted"}
-    return {"status": "error", "message": _error_message(r)}
-
-
 def patch_file(file_id: str, file: dict, tool_context: ToolContext):
     """Patch a file in the backend API. You can patch the filename, visibility, or parent folder of the file
     (useful when organising files into folders with the organiser subagent).
@@ -209,3 +179,17 @@ def patch_file(file_id: str, file: dict, tool_context: ToolContext):
     if r.status_code == 200:
         return {"status": "patched"}
     return {"status": "error", "message": _error_message(r)}
+
+# --- User Tools ---
+
+def user_by_email(email: str, tool_context: ToolContext):
+    """Get a user by their email. Make sure you input the email in lowercase (this is how all emails are stored). 
+    If you cannot find the user by email then let the requesting user know and ask them to double check."""
+    r = requests.get(
+        f"{API_BASE_URL}/agent/user_by_email",
+        headers=agent_headers(tool_context),
+        timeout=10,
+        params={"email": email},
+    )
+    if r.status_code == 200: return r.json()
+    else: return {"status": "error", "message": r.json()["detail"]}

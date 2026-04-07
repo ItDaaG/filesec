@@ -1,3 +1,4 @@
+import io
 import os
 from hashlib import sha256
 from typing import BinaryIO
@@ -21,7 +22,7 @@ def _derive_aes_key() -> bytes:
 
 _AES_KEY = _derive_aes_key()
 
-
+# Used to encrypt the file content before storing it. Received as stream.
 def encrypt_stream(in_file: BinaryIO, out_file: BinaryIO, chunk_size: int = 1024 * 1024) -> int:
     """
     Encrypt data from in_file to out_file using AES-256-GCM.
@@ -58,7 +59,6 @@ def encrypt_stream(in_file: BinaryIO, out_file: BinaryIO, chunk_size: int = 1024
 
     return total_plain
 
-
 def decrypt_to_bytes(encrypted_file: BinaryIO) -> bytes:
     """
     Decrypt an entire encrypted file (as written by encrypt_stream)
@@ -81,4 +81,24 @@ def decrypt_to_bytes(encrypted_file: BinaryIO) -> bytes:
     return plaintext
 
 
+
+# Used for the chunk encryption in the pdf embeddings
+def encrypt_bytes(plaintext: bytes) -> bytes:
+    """AES-256-GCM; same layout as encrypt_stream output: nonce (12) + ciphertext + tag (16)."""
+    nonce = os.urandom(12)
+    cipher = Cipher(algorithms.AES(_AES_KEY), modes.GCM(nonce), backend=default_backend())
+    encryptor = cipher.encryptor()
+    ciphertext = encryptor.update(plaintext) + encryptor.finalize()
+    return nonce + ciphertext + encryptor.tag
+
+
+def decrypt_chunk_content_to_str(blob: bytes | memoryview | None) -> str:
+    """
+    Decrypt `content_ciphertext` from the DB (same wire format as encrypt_stream / encrypt_bytes).
+
+    Wraps decrypt_to_bytes(io.BytesIO(...)) and UTF-8 decodes for API use.
+    """
+    if not blob:
+        return ""
+    return decrypt_to_bytes(io.BytesIO(bytes(blob))).decode("utf-8", errors="replace")
 

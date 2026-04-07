@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Dict, List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, Form, Query, UploadFile, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, Query, UploadFile, HTTPException, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
@@ -14,6 +14,7 @@ from ..database import get_db
 from ..models import User as UserModel
 from ..utils.storage import save_file
 from ..utils.encryption import decrypt_to_bytes
+from ..services.pdf_embeddings import index_pdf
 
 
 router = APIRouter(prefix="/files", tags=["files"])
@@ -49,6 +50,7 @@ def _resolve_file_path(file_path: str) -> Path:
 
 @router.post("/upload", response_model=schemas.FileOut, status_code=status.HTTP_201_CREATED)
 def upload_file(
+    background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     is_public: bool = Form(False),
     folder_id: Optional[UUID] = Form(None),
@@ -72,7 +74,7 @@ def upload_file(
         mime_type = mime_from_filename
     mime_type = mime_type or "application/octet-stream"
 
-    file_path, file_size = save_file(file, current_user.id)
+    file_path, file_size, plaintext_bytes = save_file(file, current_user.id)
 
     db_file = crud.create_file_for_user(
         db,
@@ -93,6 +95,14 @@ def upload_file(
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Could not find users: {', '.join(result['not_found'])}")
         if result["already_shared"]:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Users already shared with: {', '.join(result['already_shared'])}")
+
+    if mime_type == "application/pdf":
+        db_file.embedding_status = "pending"
+        db.add(db_file)
+        db.commit()
+        db.refresh(db_file)
+        background_tasks.add_task(index_pdf, str(db_file.id), plaintext_bytes)
+
     return db_file
 
 

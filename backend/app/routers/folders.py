@@ -110,7 +110,6 @@ def update_folder(
         folder = crud.rename_folder(db, folder, body.name)
 
     if body.parent_id is not None:
-        # Prevent moving a folder into itself
         if body.parent_id == folder_id:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,

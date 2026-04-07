@@ -97,6 +97,7 @@ class FileOut(FileBase):
     owner_id: int
     folder_id: Optional[UUID] = None
     created_at: datetime
+    embedding_status: Optional[str] = None
     model_config = ConfigDict(from_attributes=True)
 
 class SharedUser(BaseModel):

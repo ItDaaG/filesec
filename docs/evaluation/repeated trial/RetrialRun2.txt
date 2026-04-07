@@ -1,0 +1,611 @@
+Input
+user
+Can you organise Folder1
+user
+For context:
+[root_agent] called tool transfer_to_agent with parameters: {'agent_name': 'organiser_subagent'}
+user
+For context:
+[root_agent] transfer_to_agent tool returned result: {'result': None}
+Model
+code
+Code
+{
+  "folder_name": "Folder1"
+}
+user
+code
+Code
+{
+  "parent_id": null,
+  "id": "c4fb41bd-ab74-4723-b420-24875ae6510e",
+  "name": "Folder1",
+  "created_at": "2026-04-06T16:25:08.449187+01:00",
+  "owner_id": 1,
+  "updated_at": "2026-04-06T16:25:08.449187+01:00"
+}
+Model
+code
+Code
+{
+  "folder_id": "c4fb41bd-ab74-4723-b420-24875ae6510e"
+}
+user
+code
+Code
+{
+  "tree": {
+    "id": "c4fb41bd-ab74-4723-b420-24875ae6510e",
+    "name": "Folder1",
+    "subfolders": [
+      {
+        "id": "03ae82b8-16af-4788-9a9e-6e43e23b52c0",
+        "name": "someagentstuff",
+        "subfolders": [],
+        "files": [
+          {
+            "is_public": false,
+            "filename": "wang et al.pdf",
+            "id": "4feb3d02-28ab-4274-9b97-9c06de093d3d",
+            "mime_type": "application/pdf",
+            "created_at": "2026-04-06T16:27:49.368218+01:00",
+            "file_size": 5788348
+          },
+          {
+            "created_at": "2026-04-06T16:29:05.006249+01:00",
+            "mime_type": "application/pdf",
+            "file_size": 108470,
+            "is_public": false,
+            "filename": "Ghuas_Ali_CV_Grad26.pdf",
+            "id": "13a13017-6140-48b0-bf69-d28a6f0a5c5d"
+          }
+        ]
+      }
+    ],
+    "files": [
+      {
+        "created_at": "2026-04-06T16:26:56.014855+01:00",
+        "mime_type": "image/png",
+        "file_size": 33483,
+        "is_public": false,
+        "filename": "Screenshot 2026-04-06 142604.png",
+        "id": "fc3421be-c2d9-46f1-b788-39e44f5e3d28"
+      },
+      {
+        "file_size": 26381,
+        "mime_type": "image/png",
+        "created_at": "2026-04-06T16:26:56.082584+01:00",
+        "id": "023b8d86-6a66-40c7-9d10-6667b9de4345",
+        "is_public": false,
+        "filename": "Screenshot 2026-04-06 142530.png"
+      },
+      {
+        "mime_type": "image/png",
+        "created_at": "2026-04-06T16:26:56.143488+01:00",
+        "file_size": 27954,
+        "is_public": false,
+        "filename": "Screenshot 2026-04-06 142540.png",
+        "id": "bf46c7d8-3def-45c0-9bfe-710b928f3fae"
+      },
+      {
+        "file_size": 5035926,
+        "created_at": "2026-04-06T16:27:11.288626+01:00",
+        "mime_type": "application/pdf",
+        "id": "f89f7693-bc57-4cf4-b5f8-06a4a6a31507",
+        "is_public": false,
+        "filename": "agentic architecture.pdf"
+      },
+      {
+        "created_at": "2026-04-06T16:28:34.309753+01:00",
+        "mime_type": "text/html",
+        "file_size": 628,
+        "is_public": false,
+        "filename": "files.htm",
+        "id": "8dfd8016-0917-40a5-9712-8aafa860f09d"
+      },
+      {
+        "file_size": 717,
+        "mime_type": "text/x-python",
+        "created_at": "2026-04-06T16:28:43.467708+01:00",
+        "id": "5ec0310f-ce53-4e8a-bd34-62abc8e09684",
+        "is_public": false,
+        "filename": "parser.py"
+      },
+      {
+        "is_public": false,
+        "filename": "simulated_annealing.py",
+        "id": "6d0f7b2c-a5ad-40ff-9d0d-d237d521c816",
+        "created_at": "2026-04-06T16:28:43.537967+01:00",
+        "mime_type": "text/x-python",
+        "file_size": 3083
+      },
+      {
+        "is_public": false,
+        "filename": "bga_2.py",
+        "id": "29608148-610b-42ca-b33d-ddb7b3f07fd4",
+        "created_at": "2026-04-06T16:28:43.607797+01:00",
+        "mime_type": "text/x-python",
+        "file_size": 12511
+      }
+    ]
+  }
+}
+Model
+code
+Code
+{
+  "clusters_json": "\n[\n  {\"cluster_id\": \"c1\", \"file_ids\": [\"fc3421be-c2d9-46f1-b788-39e44f5e3d28\", \"023b8d86-6a66-40c7-9d10-6667b9de4345\", \"bf46c7d8-3def-45c0-9bfe-710b928f3fae\"], \"rationale\": \"All are screenshot images.\"},\n  {\"cluster_id\": \"c2\", \"file_ids\": [\"f89f7693-bc57-4cf4-b5f8-06a4a6a31507\", \"4feb3d02-28ab-4274-9b97-9c06de093d3d\"], \"rationale\": \"Academic papers in PDF format.\"},\n  {\"cluster_id\": \"c3\", \"file_ids\": [\"5ec0310f-ce53-4e8a-bd34-62abc8e09684\", \"6d0f7b2c-a5ad-40ff-9d0d-d237d521c816\", \"29608148-610b-42ca-b33d-ddb7b3f07fd4\"], \"rationale\": \"All are Python script files.\"},\n  {\"cluster_id\": \"c4\", \"file_ids\": [\"8dfd8016-0917-40a5-9712-8aafa860f09d\", \"13a13017-6140-48b0-bf69-d28a6f0a5c5d\"], \"rationale\": \"Miscellaneous documents including an HTML file and a CV.\"}\n]\n"
+}
+user
+code
+Code
+{
+  "status": "ok",
+  "clusters": [
+    {
+      "rationale": "All are screenshot images.",
+      "file_ids": [
+        "fc3421be-c2d9-46f1-b788-39e44f5e3d28",
+        "023b8d86-6a66-40c7-9d10-6667b9de4345",
+        "bf46c7d8-3def-45c0-9bfe-710b928f3fae"
+      ],
+      "cluster_id": "c1"
+    },
+    {
+      "rationale": "Academic papers in PDF format.",
+      "file_ids": [
+        "f89f7693-bc57-4cf4-b5f8-06a4a6a31507",
+        "4feb3d02-28ab-4274-9b97-9c06de093d3d"
+      ],
+      "cluster_id": "c2"
+    },
+    {
+      "rationale": "All are Python script files.",
+      "file_ids": [
+        "5ec0310f-ce53-4e8a-bd34-62abc8e09684",
+        "6d0f7b2c-a5ad-40ff-9d0d-d237d521c816",
+        "29608148-610b-42ca-b33d-ddb7b3f07fd4"
+      ],
+      "cluster_id": "c3"
+    },
+    {
+      "rationale": "Miscellaneous documents including an HTML file and a CV.",
+      "file_ids": [
+        "8dfd8016-0917-40a5-9712-8aafa860f09d",
+        "13a13017-6140-48b0-bf69-d28a6f0a5c5d"
+      ],
+      "cluster_id": "c4"
+    }
+  ],
+  "cluster_count": 4
+}
+Model
+code
+Code
+{
+  "category_labels_json": "{\"c1\": \"Screenshots\", \"c2\": \"Research Papers\", \"c3\": \"Python Code\", \"c4\": \"Miscellaneous\"}"
+}
+user
+code
+Code
+{
+  "status": "ok",
+  "category_labels": {
+    "c3": "Python Code",
+    "c4": "Miscellaneous",
+    "c1": "Screenshots",
+    "c2": "Research Papers"
+  }
+}
+Model
+code
+Code
+{
+  "plan_json": "\n{\n  \"file_to_destination\": {\n    \"fc3421be-c2d9-46f1-b788-39e44f5e3d28\": \"/Folder1/Screenshots/Screenshot 2026-04-06 142604.png\",\n    \"023b8d86-6a66-40c7-9d10-6667b9de4345\": \"/Folder1/Screenshots/Screenshot 2026-04-06 142530.png\",\n    \"bf46c7d8-3def-45c0-9bfe-710b928f3fae\": \"/Folder1/Screenshots/Screenshot 2026-04-06 142540.png\",\n    \"f89f7693-bc57-4cf4-b5f8-06a4a6a31507\": \"/Folder1/Research Papers/agentic architecture.pdf\",\n    \"4feb3d02-28ab-4274-9b97-9c06de093d3d\": \"/Folder1/Research Papers/wang et al.pdf\",\n    \"5ec0310f-ce53-4e8a-bd34-62abc8e09684\": \"/Folder1/Python Code/parser.py\",\n    \"6d0f7b2c-a5ad-40ff-9d0d-d237d521c816\": \"/Folder1/Python Code/simulated_annealing.py\",\n    \"29608148-610b-42ca-b33d-ddb7b3f07fd4\": \"/Folder1/Python Code/bga_2.py\",\n    \"8dfd8016-0917-40a5-9712-8aafa860f09d\": \"/Folder1/Miscellaneous/files.htm\",\n    \"13a13017-6140-48b0-bf69-d28a6f0a5c5d\": \"/Folder1/Miscellaneous/Ghuas_Ali_CV_Grad26.pdf\"\n  },\n  \"tree_preview\": \"\"\"Folder1/\n  Screenshots/\n    Screenshot 2026-04-06 142604.png\n    Screenshot 2026-04-06 142530.png\n    Screenshot 2026-04-06 142540.png\n  Research Papers/\n    agentic architecture.pdf\n    wang et al.pdf\n  Python Code/\n    parser.py\n    simulated_annealing.py\n    bga_2.py\n  Miscellaneous/\n    files.htm\n    Ghuas_Ali_CV_Grad26.pdf\n  someagentstuff/ (will be empty)\n\"\"\",\n  \"notes\": \"Files from 'someagentstuff' have been relocated to more appropriate categories. The 'someagentstuff' folder will remain but be empty after the moves.\"\n}\n"
+}
+user
+code
+Code
+{
+  "status": "error",
+  "message": "Invalid JSON: Expecting ',' delimiter: line 15 column 21 (char 961)"
+}
+Model
+code
+Code
+{
+  "plan_json": "\n{\n  \"file_to_destination\": {\n    \"fc3421be-c2d9-46f1-b788-39e44f5e3d28\": \"/Folder1/Screenshots/Screenshot 2026-04-06 142604.png\",\n    \"023b8d86-6a66-40c7-9d10-6667b9de4345\": \"/Folder1/Screenshots/Screenshot 2026-04-06 142530.png\",\n    \"bf46c7d8-3def-45c0-9bfe-710b928f3fae\": \"/Folder1/Screenshots/Screenshot 2026-04-06 142540.png\",\n    \"f89f7693-bc57-4cf4-b5f8-06a4a6a31507\": \"/Folder1/Research Papers/agentic architecture.pdf\",\n    \"4feb3d02-28ab-4274-9b97-9c06de093d3d\": \"/Folder1/Research Papers/wang et al.pdf\",\n    \"5ec0310f-ce53-4e8a-bd34-62abc8e09684\": \"/Folder1/Python Code/parser.py\",\n    \"6d0f7b2c-a5ad-40ff-9d0d-d237d521c816\": \"/Folder1/Python Code/simulated_annealing.py\",\n    \"29608148-610b-42ca-b33d-ddb7b3f07fd4\": \"/Folder1/Python Code/bga_2.py\",\n    \"8dfd8016-0917-40a5-9712-8aafa860f09d\": \"/Folder1/Miscellaneous/files.htm\",\n    \"13a13017-6140-48b0-bf69-d28a6f0a5c5d\": \"/Folder1/Miscellaneous/Ghuas_Ali_CV_Grad26.pdf\"\n  },\n  \"tree_preview\": \"Folder1/\\n  Screenshots/\\n    Screenshot 2026-04-06 142604.png\\n    Screenshot 2026-04-06 142530.png\\n    Screenshot 2026-04-06 142540.png\\n  Research Papers/\\n    agentic architecture.pdf\\n    wang et al.pdf\\n  Python Code/\\n    parser.py\\n    simulated_annealing.py\\n    bga_2.py\\n  Miscellaneous/\\n    files.htm\\n    Ghuas_Ali_CV_Grad26.pdf\\n  someagentstuff/ (will be empty)\",\n  \"notes\": \"Files from 'someagentstuff' have been relocated to more appropriate categories. The 'someagentstuff' folder will remain but be empty after the moves.\"\n}\n"
+}
+user
+code
+Code
+{
+  "status": "ok",
+  "plan": {
+    "notes": "Files from 'someagentstuff' have been relocated to more appropriate categories. The 'someagentstuff' folder will remain but be empty after the moves.",
+    "file_to_destination": {
+      "fc3421be-c2d9-46f1-b788-39e44f5e3d28": "/Folder1/Screenshots/Screenshot 2026-04-06 142604.png",
+      "8dfd8016-0917-40a5-9712-8aafa860f09d": "/Folder1/Miscellaneous/files.htm",
+      "13a13017-6140-48b0-bf69-d28a6f0a5c5d": "/Folder1/Miscellaneous/Ghuas_Ali_CV_Grad26.pdf",
+      "023b8d86-6a66-40c7-9d10-6667b9de4345": "/Folder1/Screenshots/Screenshot 2026-04-06 142530.png",
+      "bf46c7d8-3def-45c0-9bfe-710b928f3fae": "/Folder1/Screenshots/Screenshot 2026-04-06 142540.png",
+      "5ec0310f-ce53-4e8a-bd34-62abc8e09684": "/Folder1/Python Code/parser.py",
+      "6d0f7b2c-a5ad-40ff-9d0d-d237d521c816": "/Folder1/Python Code/simulated_annealing.py",
+      "4feb3d02-28ab-4274-9b97-9c06de093d3d": "/Folder1/Research Papers/wang et al.pdf",
+      "f89f7693-bc57-4cf4-b5f8-06a4a6a31507": "/Folder1/Research Papers/agentic architecture.pdf",
+      "29608148-610b-42ca-b33d-ddb7b3f07fd4": "/Folder1/Python Code/bga_2.py"
+    },
+    "tree_preview": "Folder1/\n  Screenshots/\n    Screenshot 2026-04-06 142604.png\n    Screenshot 2026-04-06 142530.png\n    Screenshot 2026-04-06 142540.png\n  Research Papers/\n    agentic architecture.pdf\n    wang et al.pdf\n  Python Code/\n    parser.py\n    simulated_annealing.py\n    bga_2.py\n  Miscellaneous/\n    files.htm\n    Ghuas_Ali_CV_Grad26.pdf\n  someagentstuff/ (will be empty)"
+  }
+}
+Model
+I have a plan to organize "Folder1" for you.
+Here's a preview of the proposed folder structure:
+Folder1/
+Screenshots/
+Screenshot 2026-04-06 142604.png
+Screenshot 2026-04-06 142530.png
+Screenshot 2026-04-06 142540.png
+Research Papers/
+agentic architecture.pdf
+wang et al.pdf
+Python Code/
+parser.py
+simulated_annealing.py
+bga_2.py
+Miscellaneous/
+files.htm
+Ghuas_Ali_CV_Grad26.pdf
+someagentstuff/ (will be empty)
+Notes:
+Files from 'someagentstuff' have been relocated to more appropriate categories. The 'someagentstuff' folder will remain but be empty after the moves.
+Let me know if you would like me to apply this plan.
+user
+Yes
+Model
+code
+Code
+{
+  "folder_id": "c4fb41bd-ab74-4723-b420-24875ae6510e"
+}
+user
+code
+Code
+{
+  "tree": {
+    "name": "Folder1",
+    "id": "c4fb41bd-ab74-4723-b420-24875ae6510e",
+    "subfolders": [
+      {
+        "subfolders": [],
+        "files": [
+          {
+            "id": "4feb3d02-28ab-4274-9b97-9c06de093d3d",
+            "is_public": false,
+            "filename": "wang et al.pdf",
+            "file_size": 5788348,
+            "created_at": "2026-04-06T16:27:49.368218+01:00",
+            "mime_type": "application/pdf"
+          },
+          {
+            "mime_type": "application/pdf",
+            "created_at": "2026-04-06T16:29:05.006249+01:00",
+            "file_size": 108470,
+            "is_public": false,
+            "filename": "Ghuas_Ali_CV_Grad26.pdf",
+            "id": "13a13017-6140-48b0-bf69-d28a6f0a5c5d"
+          }
+        ],
+        "name": "someagentstuff",
+        "id": "03ae82b8-16af-4788-9a9e-6e43e23b52c0"
+      }
+    ],
+    "files": [
+      {
+        "file_size": 33483,
+        "created_at": "2026-04-06T16:26:56.014855+01:00",
+        "mime_type": "image/png",
+        "id": "fc3421be-c2d9-46f1-b788-39e44f5e3d28",
+        "is_public": false,
+        "filename": "Screenshot 2026-04-06 142604.png"
+      },
+      {
+        "file_size": 26381,
+        "mime_type": "image/png",
+        "created_at": "2026-04-06T16:26:56.082584+01:00",
+        "id": "023b8d86-6a66-40c7-9d10-6667b9de4345",
+        "is_public": false,
+        "filename": "Screenshot 2026-04-06 142530.png"
+      },
+      {
+        "created_at": "2026-04-06T16:26:56.143488+01:00",
+        "mime_type": "image/png",
+        "file_size": 27954,
+        "is_public": false,
+        "filename": "Screenshot 2026-04-06 142540.png",
+        "id": "bf46c7d8-3def-45c0-9bfe-710b928f3fae"
+      },
+      {
+        "created_at": "2026-04-06T16:27:11.288626+01:00",
+        "mime_type": "application/pdf",
+        "file_size": 5035926,
+        "is_public": false,
+        "filename": "agentic architecture.pdf",
+        "id": "f89f7693-bc57-4cf4-b5f8-06a4a6a31507"
+      },
+      {
+        "file_size": 628,
+        "created_at": "2026-04-06T16:28:34.309753+01:00",
+        "mime_type": "text/html",
+        "id": "8dfd8016-0917-40a5-9712-8aafa860f09d",
+        "is_public": false,
+        "filename": "files.htm"
+      },
+      {
+        "created_at": "2026-04-06T16:28:43.467708+01:00",
+        "mime_type": "text/x-python",
+        "file_size": 717,
+        "is_public": false,
+        "filename": "parser.py",
+        "id": "5ec0310f-ce53-4e8a-bd34-62abc8e09684"
+      },
+      {
+        "id": "6d0f7b2c-a5ad-40ff-9d0d-d237d521c816",
+        "is_public": false,
+        "filename": "simulated_annealing.py",
+        "file_size": 3083,
+        "created_at": "2026-04-06T16:28:43.537967+01:00",
+        "mime_type": "text/x-python"
+      },
+      {
+        "mime_type": "text/x-python",
+        "created_at": "2026-04-06T16:28:43.607797+01:00",
+        "file_size": 12511,
+        "is_public": false,
+        "filename": "bga_2.py",
+        "id": "29608148-610b-42ca-b33d-ddb7b3f07fd4"
+      }
+    ]
+  }
+}
+Model
+code
+Code
+{
+  "parent_id": "c4fb41bd-ab74-4723-b420-24875ae6510e",
+  "name": "Screenshots"
+}
+user
+code
+Code
+{
+  "parent_id": "c4fb41bd-ab74-4723-b420-24875ae6510e",
+  "name": "Screenshots",
+  "id": "47ce9bef-901e-4260-bd9a-7d99e96c6d64",
+  "owner_id": 1,
+  "created_at": "2026-04-06T16:33:08.540699+01:00",
+  "updated_at": "2026-04-06T16:33:08.540699+01:00"
+}
+Model
+code
+Code
+{
+  "parent_id": "c4fb41bd-ab74-4723-b420-24875ae6510e",
+  "name": "Research Papers"
+}
+user
+code
+Code
+{
+  "id": "21a163cc-a795-4289-916c-10e31fb72abb",
+  "name": "Research Papers",
+  "parent_id": "c4fb41bd-ab74-4723-b420-24875ae6510e",
+  "updated_at": "2026-04-06T16:33:09.800086+01:00",
+  "created_at": "2026-04-06T16:33:09.800086+01:00",
+  "owner_id": 1
+}
+Model
+code
+Code
+{
+  "parent_id": "c4fb41bd-ab74-4723-b420-24875ae6510e",
+  "name": "Python Code"
+}
+user
+code
+Code
+{
+  "updated_at": "2026-04-06T16:33:11.225977+01:00",
+  "owner_id": 1,
+  "created_at": "2026-04-06T16:33:11.225977+01:00",
+  "name": "Python Code",
+  "id": "74332f3f-6819-498b-86d9-3d44bea175c6",
+  "parent_id": "c4fb41bd-ab74-4723-b420-24875ae6510e"
+}
+Model
+code
+Code
+{
+  "parent_id": "c4fb41bd-ab74-4723-b420-24875ae6510e",
+  "name": "Miscellaneous"
+}
+user
+code
+Code
+{
+  "updated_at": "2026-04-06T16:33:12.420130+01:00",
+  "created_at": "2026-04-06T16:33:12.420130+01:00",
+  "owner_id": 1,
+  "id": "73a5af08-9542-4dd9-8587-c0ae231d5de0",
+  "name": "Miscellaneous",
+  "parent_id": "c4fb41bd-ab74-4723-b420-24875ae6510e"
+}
+Model
+code
+Code
+{
+  "file_id": "fc3421be-c2d9-46f1-b788-39e44f5e3d28",
+  "file": {
+    "folder_id": "47ce9bef-901e-4260-bd9a-7d99e96c6d64"
+  }
+}
+user
+code
+Code
+{
+  "status": "patched"
+}
+Model
+code
+Code
+{
+  "file_id": "023b8d86-6a66-40c7-9d10-6667b9de4345",
+  "file": {
+    "folder_id": "47ce9bef-901e-4260-bd9a-7d99e96c6d64"
+  }
+}
+user
+code
+Code
+{
+  "status": "patched"
+}
+Model
+code
+Code
+{
+  "file_id": "bf46c7d8-3def-45c0-9bfe-710b928f3fae",
+  "file": {
+    "folder_id": "47ce9bef-901e-4260-bd9a-7d99e96c6d64"
+  }
+}
+user
+code
+Code
+{
+  "status": "patched"
+}
+Model
+code
+Code
+{
+  "file_id": "f89f7693-bc57-4cf4-b5f8-06a4a6a31507",
+  "file": {
+    "folder_id": "21a163cc-a795-4289-916c-10e31fb72abb"
+  }
+}
+user
+code
+Code
+{
+  "status": "patched"
+}
+Model
+code
+Code
+{
+  "file_id": "4feb3d02-28ab-4274-9b97-9c06de093d3d",
+  "file": {
+    "folder_id": "21a163cc-a795-4289-916c-10e31fb72abb"
+  }
+}
+user
+code
+Code
+{
+  "status": "patched"
+}
+Model
+code
+Code
+{
+  "file_id": "5ec0310f-ce53-4e8a-bd34-62abc8e09684",
+  "file": {
+    "folder_id": "74332f3f-6819-498b-86d9-3d44bea175c6"
+  }
+}
+user
+code
+Code
+{
+  "status": "patched"
+}
+Model
+code
+Code
+{
+  "file_id": "6d0f7b2c-a5ad-40ff-9d0d-d237d521c816",
+  "file": {
+    "folder_id": "74332f3f-6819-498b-86d9-3d44bea175c6"
+  }
+}
+user
+code
+Code
+{
+  "status": "patched"
+}
+Model
+code
+Code
+{
+  "file_id": "29608148-610b-42ca-b33d-ddb7b3f07fd4",
+  "file": {
+    "folder_id": "74332f3f-6819-498b-86d9-3d44bea175c6"
+  }
+}
+user
+code
+Code
+{
+  "status": "patched"
+}
+Model
+code
+Code
+{
+  "file_id": "8dfd8016-0917-40a5-9712-8aafa860f09d",
+  "file": {
+    "folder_id": "73a5af08-9542-4dd9-8587-c0ae231d5de0"
+  }
+}
+user
+code
+Code
+{
+  "status": "patched"
+}
+Model
+code
+Code
+{
+  "file_id": "13a13017-6140-48b0-bf69-d28a6f0a5c5d",
+  "file": {
+    "folder_id": "73a5af08-9542-4dd9-8587-c0ae231d5de0"
+  }
+}
+user
+code
+Code
+{
+  "status": "patched"
+}
+Output
+Model
+The plan has been successfully applied! "Folder1" has been organized into the following structure:
+Folder1/
+Screenshots/
+Screenshot 2026-04-06 142604.png
+Screenshot 2026-04-06 142530.png
+Screenshot 2026-04-06 142540.png
+Research Papers/
+agentic architecture.pdf
+wang et al.pdf
+Python Code/
+parser.py
+simulated_annealing.py
+bga_2.py
+Miscellaneous/
+files.htm
+Ghuas_Ali_CV_Grad26.pdf
+someagentstuff/ (now empty)

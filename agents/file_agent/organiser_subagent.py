@@ -5,7 +5,8 @@ from google.adk.agents.llm_agent import Agent
 from google.adk.tools import ToolContext
 
 from .config import API_BASE_URL
-from .shared_tools import agent_headers, create_folder, get_folders, patch_file, folder_by_name
+from .shared_instructions import append_shared_instructions
+from .shared_tools import agent_headers, create_folder, get_folders, patch_file, folder_by_name, patch_folder
 
 
 def get_folder_tree(folder_id: str, tool_context: ToolContext, depth_limit: str = ""):
@@ -103,6 +104,22 @@ def propose_folder_reorganisation(plan_json: str, tool_context: ToolContext):
     WHEN TO USE: After clusters and category labels, describe where each file should live. Use
     paths that fit the user's goals; you may suggest new folder names under a logical root.
 
+    Bear in mind that you should consider:
+    Existing subfolders:
+    - Are there files that may be suited to be in a folder that already exists?
+    - Are there folders that may be suited to be merged with another folder?
+    - Are there folders that may be suited to be deleted?
+
+    The existing folder tree structure:
+    - Is there existing hierarchy that should be preserved?
+    - Is there a reason some files are nested deeper than others?
+    - Should we create deeper nested subfolders?
+    - Should we merge some trees?
+
+    And the sentiment you gathered from the clusters and category labels.
+    - Are there files in clusters that shouldnt be in the same folder (due to existing subfolders or hierarchy)?
+    - Are there category labels that should be tweaked?
+
     INPUT (plan_json): JSON object, for example:
       `{
         "file_to_destination": { "<file_uuid>": "/CategoryName/filename.pdf", ... },
@@ -139,7 +156,8 @@ organiser_subagent = Agent(
     model="gemini-2.5-flash",
     name="organiser_subagent",
     description="Fetches real folder trees from the API, then plans clustering and layout via structured JSON tools.",
-    instruction="""Workflow: (1) get the folders id by calling folder_by_name. then pass this into get_folder_tree.
+    instruction=append_shared_instructions(
+        """Workflow: (1) get the folders id by calling folder_by_name. then pass this into get_folder_tree.
                    (2) Propose file clusters and pass JSON through propose_file_clusters.
                    (3) Propose category labels and pass JSON through propose_category_labels.
                    (4) propose_folder_reorganisation with file_to_destination and optionally tree_preview.
@@ -148,10 +166,15 @@ organiser_subagent = Agent(
 When you finish step 4, the tool returns the plan. In your reply to the user, you MUST
 present the plan in a readable, intuitive format. Never show raw plan JSON to the user.
 
-(5) You have all the tools you need to apply the plan. No need to transfer to other subagents or root_agent. 
-Only if the user clearly asks to apply the plan: use get_folders to see existing children under the scope folder,
+(5) You have all the tools you need to apply the plan.(You can see existing folder tree, get folders, create folders
+patch folders and patch files to move them. You can also patch folders to move them or rename). No need to transfer to 
+other subagents or root_agent. Only if the user clearly asks to apply the plan: use get_folders to see existing children under the scope folder,
 create_folder for any missing path segments, then patch_file with {"folder_id": "<uuid>"} to move each file.
-Use the file ids and folder ids from get_folder_tree / get_folders; do not invent ids.""",
+Use the file ids and folder ids from get_folder_tree / get_folders; do not invent ids.
+
+- Do not say you are the organiser agent. Say you are Cipher, the file storage assistant. This is crucial.
+"""
+    ),
     tools=[
         get_folder_tree,
         propose_file_clusters,
@@ -161,5 +184,6 @@ Use the file ids and folder ids from get_folder_tree / get_folders; do not inven
         create_folder,
         patch_file,
         folder_by_name,
+        patch_folder,
     ],
 )

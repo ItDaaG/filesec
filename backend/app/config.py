@@ -44,5 +44,10 @@ SMTP_FROM = os.getenv("SMTP_FROM", SMTP_USER)
 # Frontend base URL — used to build links inside emails
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
 
-# --- Agent configuration ---
+# --- Agent shared secret ---
 AGENT_INTERNAL_KEY = os.getenv("AGENT_INTERNAL_KEY", "123456789")
+
+# --- Embeddings (Gemini) ---
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+GEMINI_EMBEDDING_MODEL = os.getenv("GEMINI_EMBEDDING_MODEL", "gemini-embedding-001")
+EMBEDDING_DIMENSION = int(os.getenv("EMBEDDING_DIMENSION", "768"))

@@ -186,7 +186,7 @@ def user_can_read_file(db: Session, user_id: int, file_obj: models.File) -> bool
     return user_can_read_folder(db, user_id, file_obj.folder_id)
 
 
-def folder_ids_in_shared_subtrees(db: Session, user_id: int) -> Set[UUID]:
+def _folder_ids_in_shared_subtrees(db: Session, user_id: int) -> Set[UUID]:
     """Folder IDs in subtrees rooted at folders the user has FolderPermission on."""
     roots = [
         row[0]
@@ -217,7 +217,7 @@ def list_shared_folders_at_parent(
     Folders visible under a shared tree: children of parent_id, or top-level entries when parent_id is None
     (first folder along each shared path whose parent is outside the shared subtree).
     """
-    subtree = folder_ids_in_shared_subtrees(db, user_id)
+    subtree = _folder_ids_in_shared_subtrees(db, user_id)
     if not subtree:
         return []
     rows = db.query(models.Folder).filter(models.Folder.id.in_(subtree)).all()
@@ -228,7 +228,7 @@ def list_shared_folders_at_parent(
 
 def list_files_visible_via_folder_share(db: Session, user_id: int) -> List[models.File]:
     """Files in another user's folders where access comes only from FolderPermission subtrees (for shared-with-me listing)."""
-    folder_ids = folder_ids_in_shared_subtrees(db, user_id)
+    folder_ids = _folder_ids_in_shared_subtrees(db, user_id)
     if not folder_ids:
         return []
     return (

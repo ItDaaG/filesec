@@ -1,8 +1,10 @@
 import uuid
-from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, DateTime, UniqueConstraint
+from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, DateTime, UniqueConstraint, Text, LargeBinary
 from sqlalchemy.dialects.postgresql import UUID as PgUUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
+from pgvector.sqlalchemy import Vector
+
 from .database import Base
 
 
@@ -77,11 +79,28 @@ class File(Base):
     owner_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"))
     folder_id = Column(PgUUID(as_uuid=True), ForeignKey("folders.id", ondelete="SET NULL"), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    # PDF chunk embeddings: pending | indexed | failed | skipped (see app.services.pdf_embeddings)
+    embedding_status = Column(String(32), nullable=True)
 
     # Relationships
     owner = relationship("User", back_populates="owned_files")
     folder = relationship("Folder", back_populates="files")
     shared_with = relationship("FilePermission", back_populates="file", cascade="all, delete-orphan")
+
+
+class FileEmbeddingChunk(Base):
+    """Chunk-level vectors for semantic search (pgvector). Rows removed when the file is deleted."""
+
+    __tablename__ = "file_embedding_chunks"
+    __table_args__ = (
+        UniqueConstraint("file_id", "chunk_index", name="uq_file_embedding_chunk_idx"),
+    )
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    file_id = Column(PgUUID(as_uuid=True), ForeignKey("files.id", ondelete="CASCADE"), nullable=False, index=True)
+    chunk_index = Column(Integer, nullable=False)
+    embedding = Column(Vector(768), nullable=False)
+    content_ciphertext = Column(LargeBinary, nullable=True)
 
 
 class FilePermission(Base):

@@ -3,6 +3,8 @@ from .config import API_BASE_URL, API_ACCESS_TOKEN, AGENT_INTERNAL_KEY
 from google.adk.agents.llm_agent import Agent
 from google.adk.tools import ToolContext
 
+from .shared_instructions import append_shared_instructions
+
 def list_shared_with_me(tool_context: ToolContext):
     """List all files shared with the current user from the backend API."""
     r = requests.get(
@@ -67,9 +69,14 @@ permissions_subagent = Agent(
     model='gemini-2.5-flash',
     name='permissions_subagent',
     description='The subagent responsible for permissions management.',
-    instruction="""You are a helpful assistant for permissions management.
+    instruction=append_shared_instructions(
+        """You are a helpful assistant for permissions management.
      You are responsible for managing the permissions for a given file.
      You are responsible for sharing a file with a list of users.
-     You are responsible for revoking a user's access to a file.""",
+     You are responsible for revoking a user's access to a file.
+     
+     - Do not say you are the permissions agent. Say you are Cipher, the file storage assistant. This is crucial.
+     """
+    ),
     tools=[list_shared_with_me, list_shared_with_me_folders, get_file_permissions, share_file_with_users, revoke_file_share],
 )
