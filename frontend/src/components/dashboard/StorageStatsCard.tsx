@@ -1,36 +1,17 @@
-import { useEffect, useState } from "react";
-import { getStorageStats, type StorageStats } from "@/api/authService";
+import { useQuery } from "@tanstack/react-query";
+import { getStorageStats } from "@/api/authService";
+import { QUERY_KEYS } from "@/lib/queryKeys";
 import { CircularProgress } from "@/components/ui/circular-progress";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-
-function formatBytes(bytes: number): string {
-  if (bytes === 0) return "0 B";
-  const k = 1024;
-  const sizes = ["B", "KB", "MB", "GB", "TB"];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return `${(bytes / Math.pow(k, i)).toFixed(2)} ${sizes[i]}`;
-}
+import { formatFileSize } from "@/lib/utils";
 
 export const StorageStatsCard = () => {
-  const [storageStats, setStorageStats] = useState<StorageStats | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { data: storageStats, isLoading } = useQuery({
+    queryKey: QUERY_KEYS.storageStats(),
+    queryFn: getStorageStats,
+  });
 
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const stats = await getStorageStats();
-        setStorageStats(stats);
-      } catch (error) {
-        console.error("Failed to fetch storage stats:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchStats();
-  }, []);
-
-  if (loading || !storageStats) {
+  if (isLoading || !storageStats) {
     return (
       <Card className="w-full max-w-md">
         <CardContent className="p-6">
@@ -57,7 +38,7 @@ export const StorageStatsCard = () => {
         </CircularProgress>
         <div className="text-center space-y-1">
           <div className="text-sm text-muted-foreground">
-            {formatBytes(storageStats.storage_used_bytes)} of {formatBytes(storageStats.storage_limit_bytes)} used
+            {formatFileSize(storageStats.storage_used_bytes)} of {formatFileSize(storageStats.storage_limit_bytes)} used
           </div>
         </div>
       </CardContent>

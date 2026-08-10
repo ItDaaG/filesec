@@ -9,3 +9,7 @@ passlib[bcrypt]
 python-multipart
 pydantic[email]
 cryptography
+fastapi-mail
+pdfplumber
+pgvector
+google-genai>=1.0

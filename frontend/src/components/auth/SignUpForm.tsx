@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { SubmitButton } from "../ui/SubmitButton";
 import { Input } from "@/components/ui/input";
@@ -8,6 +9,7 @@ import { signUp } from "@/api/authService";
 import { isValidEmail } from "@/lib/utils";
 
 export const SignUpForm = () => {
+  const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (formData: FormData) => {
@@ -26,6 +28,7 @@ export const SignUpForm = () => {
 
     try {
       await signUp(payload);
+      navigate("/verify-email");
     } catch (err) {
       if (axios.isAxiosError(err) && err.response?.data?.detail) {
         setError(err.response.data.detail);
@@ -41,7 +44,7 @@ export const SignUpForm = () => {
         <CardTitle>Create an account</CardTitle>
         <CardDescription>Enter your details below to get started.</CardDescription>
       </CardHeader>
-      
+
       <form action={handleSubmit}>
         <CardContent className="space-y-4">
           {error && (
@@ -49,37 +52,37 @@ export const SignUpForm = () => {
           )}
           <div className="space-y-2">
             <Label htmlFor="username">Username</Label>
-            <Input 
+            <Input
               id="username"
               name="username"
-              placeholder="johndoe" 
-              required 
+              placeholder="johndoe"
+              required
             />
           </div>
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
-            <Input 
-              id="email" 
+            <Input
+              id="email"
               name="email"
-              type="email" 
-              placeholder="m@example.com" 
-              required 
+              type="email"
+              placeholder="m@example.com"
+              required
             />
           </div>
           <div className="space-y-2">
             <Label htmlFor="password">Password</Label>
-            <Input 
-              id="password"  
+            <Input
+              id="password"
               name="password"
               type="password"
               minLength={8}
-              required 
+              required
             />
           </div>
         </CardContent>
-        
+
         <CardFooter className="mt-4">
-          <SubmitButton label="Sign Up" pendingText="Creating Account"></SubmitButton>
+          <SubmitButton label="Sign Up" pendingText="Creating Account" />
         </CardFooter>
       </form>
     </Card>

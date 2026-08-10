@@ -1,5 +1,8 @@
 import { useState, useRef } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { QUERY_KEYS } from "@/lib/queryKeys";
 import { uploadFile } from "@/api/fileService";
+import { useFileDragSurface } from "@/hooks/useFileDragSurface";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -17,51 +20,63 @@ interface FileUploadState {
 }
 
 interface FileUploadProps {
-  onUploadSuccess?: (file: { id: number; filename: string; file_size: number }) => void;
+  onUploadSuccess?: (file: { id: string; filename: string; file_size: number }) => void;
   onUploadError?: (error: string) => void;
+  folderId?: string | null;
   className?: string;
 }
 
 
-export const FileUpload = ({ onUploadSuccess, onUploadError, className }: FileUploadProps) => {
+export const FileUpload = ({ onUploadSuccess, onUploadError, folderId, className }: FileUploadProps) => {
+  const queryClient = useQueryClient();
+  const { isDragOver, dragSurfaceHandlers, resetDragHighlight } = useFileDragSurface();
   const [uploads, setUploads] = useState<FileUploadState[]>([]);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const updateUpload = (idx: number, patch: Partial<FileUploadState>) => {
     setUploads((prev) => prev.map((u, i) => (i === idx ? { ...u, ...patch } : u)));
   };
 
-  const handleFilesSelect = (selectedFiles: FileList | null) => {
+  const mergeFilesIntoQueue = (selectedFiles: FileList | null) => {
     if (!selectedFiles || selectedFiles.length === 0) return;
-    setUploads(
-      Array.from(selectedFiles).map((file) => ({
-        file,
-        isPublic: false,
-        sharedWith: [],
-        showShared: false,
-        sharedInput: "",
-        sharedError: undefined,
-      }))
-    );
+    setUploads((prev) => {
+      const dupKey = (f: File) => `${f.name}:${f.size}:${f.lastModified}`;
+      const seen = new Set(prev.map((u) => dupKey(u.file)));
+      const next: FileUploadState[] = [];
+      for (const file of Array.from(selectedFiles)) {
+        const k = dupKey(file);
+        if (seen.has(k)) continue;
+        seen.add(k);
+        next.push({
+          file,
+          isPublic: false,
+          sharedWith: [],
+          showShared: false,
+          sharedInput: "",
+          sharedError: undefined,
+        });
+      }
+      if (next.length === 0) return prev;
+      return [...prev, ...next];
+    });
     setError(null);
   };
 
-  const handleDragOver = (e: React.DragEvent) => { e.preventDefault(); setIsDragging(true); };
-  const handleDragLeave = (e: React.DragEvent) => { e.preventDefault(); setIsDragging(false); };
+  const openFilePicker = () => fileInputRef.current?.click();
+
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
-    setIsDragging(false);
-    handleFilesSelect(e.dataTransfer.files);
+    resetDragHighlight();
+    mergeFilesIntoQueue(e.dataTransfer.files);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if ((e.key === "Enter" || e.key === " ") && uploads.length === 0 && !uploading) {
+    if ((e.key === "Enter" || e.key === " ") && !uploading) {
       e.preventDefault();
-      fileInputRef.current?.click();
+      openFilePicker();
     }
   };
 
@@ -104,7 +119,7 @@ export const FileUpload = ({ onUploadSuccess, onUploadError, className }: FileUp
           });
         }, 200);
 
-        const response = await uploadFile(file, isPublic, sharedWith);
+        const response = await uploadFile(file, isPublic, sharedWith, folderId);
 
         clearInterval(progressInterval);
         completed++;
@@ -114,6 +129,8 @@ export const FileUpload = ({ onUploadSuccess, onUploadError, className }: FileUp
 
       setUploads([]);
       if (fileInputRef.current) fileInputRef.current.value = "";
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.files.all() });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.storageStats() });
     } catch (err: any) {
       const msg = err.response?.data?.detail || err.message || "Upload failed";
       setError(msg);
@@ -135,38 +152,43 @@ export const FileUpload = ({ onUploadSuccess, onUploadError, className }: FileUp
       <CardContent className="space-y-4">
         <div
           role="button"
-          tabIndex={uploads.length === 0 && !uploading ? 0 : -1}
-          aria-label="File drop zone. Press Enter or Space to select files."
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
+          tabIndex={!uploading ? 0 : -1}
+          aria-label={
+            uploads.length === 0
+              ? "File drop zone. Press Enter or Space to select files."
+              : "File drop zone. Click empty area or press Enter or Space to add more files."
+          }
+          {...dragSurfaceHandlers}
           onDrop={handleDrop}
           onKeyDown={handleKeyDown}
-          onClick={() => uploads.length === 0 && !uploading && fileInputRef.current?.click()}
-          className={`
-            relative border-2 border-dashed rounded-lg
-            h-[160px] flex flex-col items-center justify-center
-            transition-colors duration-150 overflow-y-auto
-            ${uploads.length === 0 ? "cursor-pointer" : "cursor-default"}
-            ${isDragging ? "border-primary bg-primary/5" : "border-muted-foreground/25 hover:border-primary/50"}
-            ${uploading ? "opacity-50 pointer-events-none" : ""}
-          `}
+          onClick={() => !uploading && openFilePicker()}
+          className={cn(
+            "relative h-[160px] border-2 border-dashed rounded-lg flex flex-col overflow-hidden transition-colors duration-150",
+            !uploading && "cursor-pointer",
+            isDragOver ? "border-primary bg-primary/5" : "border-muted-foreground/25 hover:border-primary/50",
+            uploading && "opacity-50 pointer-events-none",
+          )}
         >
           <input
             ref={fileInputRef}
             type="file"
             multiple
-            onChange={(e) => handleFilesSelect(e.target.files)}
+            onChange={(e) => {
+              mergeFilesIntoQueue(e.target.files);
+              e.target.value = "";
+            }}
             className="hidden"
             disabled={uploading}
             aria-label="File input"
           />
 
           {uploads.length > 0 ? (
-            <div className="w-full h-full px-4 py-3 space-y-2 overflow-y-auto">
+            <div className="min-h-0 flex-1 w-full overflow-y-auto px-4 py-3 space-y-2 flex flex-col [scrollbar-width:thin]">
               {uploads.map((upload, idx) => (
                 <div
-                  key={`${upload.file.name}-${idx}`}
+                  key={`${upload.file.name}-${upload.file.size}-${upload.file.lastModified}`}
                   className="flex flex-col p-2 rounded bg-muted/50 gap-1.5"
+                  onClick={(e) => e.stopPropagation()}
                 >
                   {/* Main row */}
                   <div className="flex items-center gap-2">
@@ -273,7 +295,7 @@ export const FileUpload = ({ onUploadSuccess, onUploadError, className }: FileUp
               ))}
             </div>
           ) : (
-            <div className="text-center space-y-1 px-8">
+            <div className="flex flex-1 flex-col items-center justify-center px-8 text-center">
               <p className="text-muted-foreground text-sm">
                 Drag and drop files here, or click to select
               </p>

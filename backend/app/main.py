@@ -6,7 +6,7 @@ from .auth import router as auth_router
 from .routers.users import router as users_router
 from .routers.files import router as files_router
 from .routers.folders import router as folders_router
-
+from .routers.agent import router as agent_router
 app = FastAPI()
 
 # CORS middleware - allow all origins
@@ -35,4 +35,4 @@ app.include_router(auth_router)
 app.include_router(users_router)
 app.include_router(files_router)
 app.include_router(folders_router)
-
+app.include_router(agent_router)

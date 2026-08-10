@@ -5,6 +5,7 @@ __pycache__/
 *.so
 .Python
 venv/
+agents_venv/
 env/
 ENV/
 .venv
@@ -62,3 +63,6 @@ logs/
 *.tmp
 *.temp
 .cache/
+
+.adk/
+.artifacts/

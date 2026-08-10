@@ -1,3 +1,4 @@
+import io
 from pathlib import Path
 from typing import Tuple
 
@@ -9,23 +10,16 @@ from .encryption import encrypt_stream
 UPLOAD_ROOT = Path("uploads")
 
 
-def save_file(file: UploadFile, user_id: int) -> Tuple[str, int]:
+def save_file(file: UploadFile, user_id: int) -> Tuple[str, int, bytes]:
     """
-    Save an uploaded file to local disk under uploads/{user_id}/
-    with server-side encryption and return (file_path, file_size).
+    Read upload once, encrypt to disk under uploads/{user_id}/, return path, plaintext size, and raw bytes.
 
-    - Only the file contents are encrypted, not the DB metadata.
-    - file_path is stored as a string relative to the backend root
-      so it's easy to swap to real storage later.
+    Callers that need the bytes (e.g. PDF embedding before any decrypt) use the third return value.
     """
+    plaintext_bytes = file.file.read()
     user_dir = UPLOAD_ROOT / str(user_id)
     user_dir.mkdir(parents=True, exist_ok=True)
-
     destination = user_dir / file.filename
-
     with destination.open("wb") as out_file:
-        size = encrypt_stream(file.file, out_file)
-
-    # Store path as POSIX-style relative string and the original plaintext size
-    return str(destination.as_posix()), size
-
+        size = encrypt_stream(io.BytesIO(plaintext_bytes), out_file)
+    return str(destination.as_posix()), size, plaintext_bytes
