@@ -2,7 +2,7 @@
 
 **Talk to your files instead of digging through folders.**
 
-fileSec is a personal file storage platform where a multi-agent AI system — Cipher — handles file management, organisation, and search through plain natural language, backed by a validated API that keeps the AI honest about what actually exists.
+fileSec is a personal file storage platform where a multi-agent AI system — **Cipher** — handles file management, organisation, and search through plain natural language, backed by an authoritative backend state that keeps the AI honest about what actually exists.
 
 ![fileSec interface](docs/interface.png)
 
