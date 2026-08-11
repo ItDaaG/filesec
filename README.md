@@ -78,7 +78,7 @@ A few things surfaced during development that were more useful than a clean succ
 
 **A prompt injection attack succeeded.** I gave the agent a tool to access every user in the database. I explicitly told it to never share this information to the user. A crafted message overrode the agent's instructions and got it to list every user in the database:
 
-![Prompt injection leaking user data](docs/evaluation/prompt injection/prompt injection1.png)
+![Prompt injection leaking user data](docs/evaluation/prompt%20injection/prompt%20injection1.png)
 
 **Prompt wording is not a security boundary; tool access is.** No amount of "please don't do that" in a system prompt is a substitute for the agent architecturally not being able to. (The need to know principle).
 
@@ -88,7 +88,7 @@ A few things surfaced during development that were more useful than a clean succ
 
 **The authoritative state held up** In a "gaslighting" test, I repeatedly insisted a file called `Q4Invoices.pdf` existed and demanded it be renamed. It doesn't exist. The agent exhausted every search tool, found nothing, and held its ground rather than blindly agreeing with me:
 
-![Agent refusing to hallucinate a file that doesn't exist](docs/evaluation/authoritative state/4.png)
+![Agent refusing to hallucinate a file that doesn't exist](docs/evaluation/authoritative%20state/4.png)
 
 **Emergent filtering in retrieval.** When queried about a topic completely absent from the documents, the agent didn't just surface the nearest vector match anyway. It reasoned over distance scores and chunk content together and correctly said it didn't know. This wasn't something I explicitly programmed, it fell out of giving the model both the scores and the content to reason over. Moving forward it is appropriate to only return the chunks within a minimum distance, but it is cool to see the agent handle this scenario itself.
 
