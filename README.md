@@ -12,9 +12,9 @@ fileSec is a personal file storage platform where a multi-agent AI system — Ci
 
 Cloud storage is great at syncing files and terrible at helping you organise them. The interface hasn't fundamentally changed in over a decade. You're still clicking through folder trees, naming things consistently (or not), and hoping you remember where you put last year's tax documents. The result is that most people either never establish a system, or abandon the one they had because it's too much upkeep.
 
-I wanted to see whether a multi-agent AI architecture could make "just tell it what you want" actually work — without the AI hallucinating operations or making things up about your files. That second part turned out to be the interesting problem: it's easy to build an AI that *sounds* like it's managing your files. It's much harder to build one you can trust to be right.
+I wanted to see whether a multi-agent AI architecture could make "just tell it what you want" actually work, without the AI hallucinating operations or making things up about your files. That second part turned out to be the interesting problem: it's easy to build an AI that *sounds* like it's managing your files. It's much harder to build one you can trust to be right.
 
-While building this, I noticed the industry was independently converging on the same space. OneDrive's Copilot Agents, Dropbox Dash's RAG-driven search — which was a good sign the problem was worth solving.
+While building this, I noticed the industry was independently converging on the same space. OneDrive's Copilot Agents, Dropbox Dash's RAG-driven search. This validated my idea and made me commit.
 
 ---
 
